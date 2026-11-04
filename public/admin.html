@@ -1,38 +1,112 @@
-<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin — Cổng Vũ Trụ Thần Ra</title>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Cổng Vũ Trụ của Thần Ra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;background:#0a0530;color:#f4ecff;font:15px/1.45 'Be Vietnam Pro',system-ui,sans-serif;padding:20px;max-width:1100px;margin:auto}
-h1{color:#f1c453;font-size:22px}h2{color:#f1c453;font-size:15px;letter-spacing:1px;margin:0 0 10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
-.box{border:1px solid rgba(241,196,83,.45);border-radius:14px;padding:14px;background:rgba(26,10,82,.6)}
-input,select{background:#12063a;color:#fff;border:1px solid #6a4fd0;border-radius:8px;padding:7px 9px;font:inherit;width:100%;margin:3px 0}
-button{background:#3b1fa8;color:#fff;border:1px solid #f1c453;border-radius:8px;padding:7px 12px;font:600 14px inherit;cursor:pointer;margin:3px 3px 3px 0}button:hover{background:#7b2ff7}
-pre{background:#05020f;border-radius:8px;padding:10px;max-height:240px;overflow:auto;font-size:12.5px;white-space:pre-wrap}
-.q span{display:inline-block;background:#12063a;border:1px solid #6a4fd0;border-radius:12px;padding:2px 10px;margin:2px;font-size:13px}
-</style></head><body>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #080321; color: #f4ecff; font: 15px/1.5 'Be Vietnam Pro', system-ui, sans-serif; padding: 22px; max-width: 1180px; margin: auto; }
+  h1 { color: #f1c453; font-size: 24px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+  h2 { color: #f1c453; font-size: 15px; letter-spacing: 0.8px; margin: 0 0 12px; text-transform: uppercase; border-bottom: 1px solid rgba(241,196,83,.25); padding-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 16px; }
+  .box { border: 1px solid rgba(241,196,83,.45); border-radius: 14px; padding: 16px; background: rgba(22, 9, 68, 0.72); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  label { display: block; margin: 8px 0 4px; font-weight: 600; font-size: 13.5px; color: #ffeaa8; }
+  input[type="text"], input[type="number"], select { background: #12063a; color: #fff; border: 1px solid #6a4fd0; border-radius: 8px; padding: 8px 10px; font: inherit; width: 100%; margin: 2px 0 6px; outline: none; }
+  input[type="range"] { width: 100%; accent-color: #f1c453; margin: 4px 0; }
+  .chk-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-weight: 600; color: #fff; cursor: pointer; }
+  .chk-row input { width: 18px; height: 18px; accent-color: #f1c453; cursor: pointer; }
+  button { background: #3b1fa8; color: #fff; border: 1px solid #f1c453; border-radius: 8px; padding: 8px 13px; font: 600 13.5px inherit; cursor: pointer; margin: 3px 4px 3px 0; transition: all .2s; }
+  button:hover { background: #6b2cf5; transform: translateY(-1px); }
+  button.gold { background: linear-gradient(135deg, #b8791a, #f1c453); color: #12063a; font-weight: 800; }
+  pre { background: #05020f; border: 1px solid rgba(106,79,208,.4); border-radius: 8px; padding: 10px; max-height: 240px; overflow: auto; font-size: 12.5px; white-space: pre-wrap; color: #e2d4ff; }
+  .q span { display: inline-block; background: #12063a; border: 1px solid #6a4fd0; border-radius: 12px; padding: 3px 10px; margin: 2px; font-size: 13px; }
+  .mp3-bar { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .status-tag { display: inline-block; margin-top: 8px; font-size: 13px; color: #3de8ff; font-weight: 600; }
+</style>
+</head>
+<body>
 <h1>☀️ Admin — Cổng Vũ Trụ của Thần Ra</h1>
+
 <div class="grid">
-<div class="box"><h2>KẾT NỐI TIKTOK LIVE</h2><input id="uname" placeholder="@username hoặc link vt.tiktok.com"><button onclick="rpc('live.connect',{username:uname.value})">Kết nối</button><button onclick="rpc('live.disconnect')">Ngắt</button><button onclick="rpc('live.setAutoSim',{enabled:true})">Bật demo tự động</button><button onclick="rpc('live.setAutoSim',{enabled:false})">Tắt demo</button><div id="conn"></div></div>
-<div class="box"><h2>GIẢ LẬP SỰ KIỆN</h2><input id="u" value="Minh Tâm" placeholder="Tên người xem"><input id="coins" type="number" value="5" placeholder="Số xu"><input id="txt" value="cầu cho gia đình bình an" placeholder="Bình luận">
-<button onclick="ev('tarot.join')">Vào live</button><button onclick="ev('tarot.follow')">Follow</button><button onclick="ev('tarot.share')">Share</button><button onclick="ev('tarot.like',{count:8})">Thả tim</button><button onclick="ev('tarot.gift',{coins:+coins.value,giftName:'Quà thử'})">Tặng quà</button><button onclick="ev('tarot.claim')">Claim</button><button onclick="ev('tarot.comment',{text:txt.value})">Gửi bình luận</button></div>
-<div class="box"><h2>ĐIỀU KHIỂN</h2><button onclick="rpc('tarot.skip')">Bỏ qua lượt đang đọc</button><button onclick="if(confirm('Xoá toàn bộ hàng chờ?'))rpc('tarot.reset')">Reset hàng chờ</button>
-<label>Âm lượng nhạc nền <input type="range" min="0" max="1" step=".05" id="mv" onchange="rpc('tarot.updateSettings',{musicVolume:+mv.value})"></label>
-<label>Âm lượng giọng Ra <input type="range" min="0" max="1" step=".05" id="tv" onchange="rpc('tarot.updateSettings',{ttsVolume:+tv.value})"></label>
-<label><input type="checkbox" id="tts" style="width:auto" onchange="rpc('tarot.updateSettings',{ttsEnabled:tts.checked})"> Bật giọng đọc ZeroTTS</label>
-<label>Số lá cho người đọc từ sảnh <select id="lc" onchange="rpc('tarot.updateSettings',{lobbyCards:+lc.value})"><option>1</option><option>2</option><option>3</option></select></label>
-<label>Cho đọc lại miễn phí sau (phút) <input id="rp" type="number" onchange="rpc('tarot.updateSettings',{repeatAfterMin:+rp.value})"></label></div>
-<div class="box"><h2>HÀNG CHỜ HIỆN TẠI</h2><div class="q" id="queues"></div></div>
-<div class="box"><h2>XEM THỬ LỜI ĐỌC CỦA RA</h2><button onclick="prev(1)">1 lá</button><button onclick="prev(2)">2 lá</button><button onclick="prev(3)">3 lá</button><pre id="prev">—</pre></div>
-<div class="box"><h2>NHẬT KÝ JSON-RPC</h2><pre id="log"></pre></div>
-</div>
-<script>
-const $=id=>document.getElementById(id), log=(t)=>{$('log').textContent=(t+'\n'+$('log').textContent).slice(0,4000)};
-let n=0;async function rpc(method,params={}){const r=await(await fetch('/rpc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:++n,method,params})})).json();log(`${method} → ${JSON.stringify(r.result??r.error).slice(0,160)}`);return r.result}
-const ev=(m,p={})=>rpc(m,{user:$('u').value,uniqueId:'adm_'+$('u').value,...p});
-async function prev(c){const r=await rpc('tarot.preview',{cards:c});$('prev').textContent=r.cards.map(x=>x.vn).join(' · ')+'\n\n'+r.speech}
-const ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`);
-ws.onmessage=m=>{const j=JSON.parse(m.data);if(j.method==='tarot.state'){const s=j.params,L=(a)=>a.map(p=>`<span>${p.user}</span>`).join('')||'—';
-$('queues').innerHTML=`<b>Quà:</b> ${L(s.giftQueue)}<br><b>Sảnh ưu tiên:</b> ${L(s.lobby.priority)}<br><b>Sảnh thường:</b> ${L(s.lobby.normal)}<br><b>Đang đọc:</b> ${s.current?s.current.user:'—'}`;
-$('conn').textContent=s.tiktok.connected?`Đã kết nối @${s.tiktok.username}`:(s.tiktok.lastError||'Chưa kết nối');
-$('mv').value=s.settings.musicVolume;$('tv').value=s.settings.ttsVolume;$('tts').checked=s.settings.ttsEnabled;$('lc').value=s.settings.lobbyCards;if(document.activeElement!==$('rp'))$('rp').value=s.settings.repeatAfterMin}
-else if(j.method==='event.log')log(`${j.params.icon} ${j.params.text}`)};
-</script></body></html>
+  <!-- KẾT NỐI TIKTOK LIVE -->
+  <div class="box">
+    <h2>Kết nối TikTok Live</h2>
+    <label>Tài khoản TikTok (@username hoặc link live)</label>
+    <input id="uname" type="text" placeholder="@username hoặc link vt.tiktok.com">
+    <div>
+      <button class="gold" onclick="rpc('live.connect',{username:uname.value})">Kết nối Live</button>
+      <button onclick="rpc('live.disconnect')">Ngắt kết nối</button>
+      <button onclick="rpc('live.setAutoSim',{enabled:true})">Bật Demo tự động</button>
+      <button onclick="rpc('live.setAutoSim',{enabled:false})">Tắt Demo</button>
+    </div>
+    <div id="conn" class="status-tag">Chưa kết nối</div>
+  </div>
+
+  <!-- GIẢ LẬP SỰ KIỆN & ĐẶT CÂU HỎI -->
+  <div class="box">
+    <h2>Giả lập sự kiện & Câu hỏi</h2>
+    <label>Tên người xem</label>
+    <input id="u" type="text" value="Minh Tâm" placeholder="Tên người xem">
+    
+    <label>Câu hỏi / Bình luận (Nếu tặng quà sẽ đọc theo câu hỏi này)</label>
+    <input id="txt" type="text" value="Tháng này công việc của mình có thuận lợi không?" placeholder="Nhập câu hỏi hoặc lời cầu nguyện...">
+    
+    <div style="margin-top:8px">
+      <button onclick="ev('tarot.like',{count:8})">💖 Thả tim (Vào Sảnh Thường)</button>
+      <button onclick="ev('tarot.follow')">⭐ Follow (Sảnh Ưu Tiên)</button>
+      <button onclick="ev('tarot.share')">🔁 Share</button>
+    </div>
+    <div style="margin-top:4px">
+      <button class="gold" onclick="ev('tarot.gift',{coins:5,giftName:'Quà 01-10 xu',question:txt.value})">🎁 Quà 01–10 xu (1 lá)</button>
+      <button class="gold" onclick="ev('tarot.gift',{coins:30,giftName:'Quà 11-99 xu',question:txt.value})">🎁 Quà 11–99 xu (2 lá)</button>
+      <button class="gold" onclick="ev('tarot.gift',{coins:199,giftName:'Quà >99 xu',question:txt.value})">👑 Quà &gt;99 xu (3 lá)</button>
+    </div>
+    <div style="margin-top:4px">
+      <button onclick="ev('tarot.comment',{text:txt.value})">💬 Gửi bình luận / Câu hỏi</button>
+      <button onclick="ev('tarot.pray',{wish:txt.value})">🏮 Thả đèn cầu nguyện</button>
+      <button onclick="ev('tarot.claim')">✨ Claim nhận bài</button>
+    </div>
+  </div>
+
+  <!-- ĐIỀU KHIỂN ÂM THANH, NHẠC NỀN & GIỌNG ĐỌC -->
+  <div class="box">
+    <h2>Điều khiển Âm thanh & Giọng đọc</h2>
+    <div>
+      <button onclick="rpc('tarot.skip')">⏭ Bỏ qua lượt đang đọc</button>
+      <button onclick="if(confirm('Xoá toàn bộ hàng chờ?'))rpc('tarot.reset')">🗑 Reset hàng chờ</button>
+    </div>
+
+    <label>Chọn nhạc nền MP3 (Phát trên màn hình Live)</label>
+    <div class="mp3-bar">
+      <input type="file" id="admMp3" accept="audio/mp3,audio/*" style="font-size:13px">
+      <button onclick="rpc('audio.control',{action:'toggle'})">⏯ Phát/Dừng</button>
+    </div>
+
+    <label>Âm lượng nhạc nền</label>
+    <input type="range" min="0" max="1" step=".05" id="mv" onchange="rpc('tarot.updateSettings',{musicVolume:+mv.value})">
+
+    <label>Chọn giọng đọc tiếng Việt</label>
+    <select id="vp" onchange="rpc('tarot.updateSettings',{ttsVoice:vp.value})">
+      <option value="vi-VN-nu">Giọng Nữ Huyền Bí (vi-VN)</option>
+      <option value="vi-VN-nam">Giọng Nam Trầm Ấm (vi-VN)</option>
+      <option value="maichi">ZeroTTS — Mai Chi</option>
+    </select>
+
+    <label>Âm lượng giọng đọc Ra</label>
+    <input type="range" min="0" max="1" step=".05" id="tv" onchange="rpc('tarot.updateSettings',{ttsVolume:+tv.value})">
+
+    <label class="chk-row">
+      <input type="checkbox" id="tts" onchange="rpc('tarot.updateSettings',{ttsEnabled:tts.checked})">
+      <span>Bật giọng đọc bài (Tổng)</span>
+    </label>
+
+    <label class="chk-row">
+      <input type="checkbox" id="ntts" onchange="rpc('tarot.updateSettings',{normalTtsEnabled:ntts.checked})">
+      <span>Bật giọng đọc bài cho hàng Sảnh Thường</span>
+    </label>
+
+    <div style="display:grid;grid
