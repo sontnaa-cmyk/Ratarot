@@ -3,110 +3,388 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin — Cổng Vũ Trụ của Thần Ra</title>
+<title>Bảng Điều Khiển Admin — Cổng Vũ Trụ Thần Ra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; background: #080321; color: #f4ecff; font: 15px/1.5 'Be Vietnam Pro', system-ui, sans-serif; padding: 22px; max-width: 1180px; margin: auto; }
-  h1 { color: #f1c453; font-size: 24px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
-  h2 { color: #f1c453; font-size: 15px; letter-spacing: 0.8px; margin: 0 0 12px; text-transform: uppercase; border-bottom: 1px solid rgba(241,196,83,.25); padding-bottom: 6px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 16px; }
-  .box { border: 1px solid rgba(241,196,83,.45); border-radius: 14px; padding: 16px; background: rgba(22, 9, 68, 0.72); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-  label { display: block; margin: 8px 0 4px; font-weight: 600; font-size: 13.5px; color: #ffeaa8; }
-  input[type="text"], input[type="number"], select { background: #12063a; color: #fff; border: 1px solid #6a4fd0; border-radius: 8px; padding: 8px 10px; font: inherit; width: 100%; margin: 2px 0 6px; outline: none; }
-  input[type="range"] { width: 100%; accent-color: #f1c453; margin: 4px 0; }
-  .chk-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-weight: 600; color: #fff; cursor: pointer; }
-  .chk-row input { width: 18px; height: 18px; accent-color: #f1c453; cursor: pointer; }
-  button { background: #3b1fa8; color: #fff; border: 1px solid #f1c453; border-radius: 8px; padding: 8px 13px; font: 600 13.5px inherit; cursor: pointer; margin: 3px 4px 3px 0; transition: all .2s; }
-  button:hover { background: #6b2cf5; transform: translateY(-1px); }
-  button.gold { background: linear-gradient(135deg, #b8791a, #f1c453); color: #12063a; font-weight: 800; }
-  pre { background: #05020f; border: 1px solid rgba(106,79,208,.4); border-radius: 8px; padding: 10px; max-height: 240px; overflow: auto; font-size: 12.5px; white-space: pre-wrap; color: #e2d4ff; }
-  .q span { display: inline-block; background: #12063a; border: 1px solid #6a4fd0; border-radius: 12px; padding: 3px 10px; margin: 2px; font-size: 13px; }
-  .mp3-bar { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-  .status-tag { display: inline-block; margin-top: 8px; font-size: 13px; color: #3de8ff; font-weight: 600; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 50% 0%, #1b0c4f 0%, #07021c 80%);
+    color: #f4ecff;
+    font: 14.5px/1.5 'Be Vietnam Pro', system-ui, sans-serif;
+    padding: 20px;
+    max-width: 1240px;
+    margin: auto;
+    min-height: 100vh;
+  }
+  h1 {
+    color: #ffd45e;
+    font-size: 24px;
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-shadow: 0 0 14px rgba(255, 212, 94, 0.45);
+  }
+  h1 a {
+    font-size: 14px;
+    background: #2b1570;
+    color: #ffd45e;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid #ffd45e;
+  }
+  h2 {
+    color: #ffd45e;
+    font-size: 15px;
+    letter-spacing: 0.8px;
+    margin: 0 0 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(241, 196, 83, 0.25);
+    padding-bottom: 6px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 16px;
+  }
+  .box {
+    border: 1px solid rgba(241, 196, 83, 0.45);
+    border-radius: 16px;
+    padding: 16px;
+    background: rgba(18, 8, 56, 0.78);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+  }
+  label {
+    display: block;
+    margin: 8px 0 4px;
+    font-weight: 600;
+    color: #e2d4ff;
+    font-size: 13.5px;
+  }
+  .chk-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+    cursor: pointer;
+    font-weight: 600;
+    color: #fff;
+  }
+  .chk-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #f1c453;
+    margin: 0;
+  }
+  input, select, textarea {
+    background: #0e042c;
+    color: #fff;
+    border: 1px solid #6a4fd0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font: inherit;
+    width: 100%;
+    margin: 3px 0 8px;
+  }
+  input[type="range"] {
+    padding: 0;
+    accent-color: #ffd45e;
+  }
+  button {
+    background: linear-gradient(135deg, #3b1fa8, #6328d9);
+    color: #fff;
+    border: 1px solid #f1c453;
+    border-radius: 8px;
+    padding: 8px 13px;
+    font: 600 13.5px inherit;
+    cursor: pointer;
+    margin: 4px 4px 4px 0;
+    transition: all 0.2s;
+  }
+  button:hover {
+    background: linear-gradient(135deg, #5728d4, #8b3dff);
+    transform: translateY(-1px);
+    box-shadow: 0 0 12px rgba(241, 196, 83, 0.45);
+  }
+  button.gold {
+    background: linear-gradient(135deg, #b8791a, #e09f2d);
+    color: #09031f;
+    font-weight: 800;
+  }
+  pre {
+    background: #05020f;
+    border: 1px solid rgba(106, 79, 208, 0.4);
+    border-radius: 8px;
+    padding: 10px;
+    max-height: 220px;
+    overflow: auto;
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    color: #ffe9a8;
+  }
+  .q span {
+    display: inline-block;
+    background: #160848;
+    border: 1px solid #8567f7;
+    border-radius: 12px;
+    padding: 3px 10px;
+    margin: 2px;
+    font-size: 12.5px;
+  }
+  .bgm-status {
+    background: rgba(255, 212, 94, 0.12);
+    border: 1px dashed #ffd45e;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 6px 0 10px;
+    font-size: 13px;
+    color: #ffd45e;
+  }
+  .status-badge {
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(61, 232, 255, 0.12);
+    color: #3de8ff;
+    font-weight: 600;
+    font-size: 13px;
+  }
 </style>
 </head>
 <body>
-<h1>☀️ Admin — Cổng Vũ Trụ của Thần Ra</h1>
+<h1>
+  <span>☀️ Bảng Điều Khiển Admin — Cổng Vũ Trụ Thần Ra</span>
+  <a href="/" target="_blank">📺 Mở Màn Hình Live 9:16</a>
+</h1>
 
 <div class="grid">
-  <!-- KẾT NỐI TIKTOK LIVE -->
+  <!-- 1. KẾT NỐI TIKTOK LIVE & DEMO -->
   <div class="box">
-    <h2>Kết nối TikTok Live</h2>
-    <label>Tài khoản TikTok (@username hoặc link live)</label>
-    <input id="uname" type="text" placeholder="@username hoặc link vt.tiktok.com">
+    <h2>1. Kết Nối TikTok Live &amp; Chế Độ Demo</h2>
+    <label>Tài khoản TikTok (@username hoặc link phòng Live):</label>
+    <input id="uname" placeholder="Ví dụ: @ten_kenh_tiktok">
     <div>
-      <button class="gold" onclick="rpc('live.connect',{username:uname.value})">Kết nối Live</button>
-      <button onclick="rpc('live.disconnect')">Ngắt kết nối</button>
-      <button onclick="rpc('live.setAutoSim',{enabled:true})">Bật Demo tự động</button>
-      <button onclick="rpc('live.setAutoSim',{enabled:false})">Tắt Demo</button>
+      <button class="gold" onclick="rpc('live.connect',{username:uname.value})">🔌 Kết nối TikTok Live</button>
+      <button onclick="rpc('live.disconnect')">❌ Ngắt kết nối</button>
     </div>
-    <div id="conn" class="status-tag">Chưa kết nối</div>
-  </div>
-
-  <!-- GIẢ LẬP SỰ KIỆN & ĐẶT CÂU HỎI -->
-  <div class="box">
-    <h2>Giả lập sự kiện & Câu hỏi</h2>
-    <label>Tên người xem</label>
-    <input id="u" type="text" value="Minh Tâm" placeholder="Tên người xem">
-    
-    <label>Câu hỏi / Bình luận (Nếu tặng quà sẽ đọc theo câu hỏi này)</label>
-    <input id="txt" type="text" value="Tháng này công việc của mình có thuận lợi không?" placeholder="Nhập câu hỏi hoặc lời cầu nguyện...">
-    
     <div style="margin-top:8px">
-      <button onclick="ev('tarot.like',{count:8})">💖 Thả tim (Vào Sảnh Thường)</button>
-      <button onclick="ev('tarot.follow')">⭐ Follow (Sảnh Ưu Tiên)</button>
-      <button onclick="ev('tarot.share')">🔁 Share</button>
+      <button onclick="rpc('live.setAutoSim',{enabled:true})">▶️ Bật Demo Tự Động</button>
+      <button onclick="rpc('live.setAutoSim',{enabled:false})">⏸️ Tắt Demo Tự Động</button>
     </div>
-    <div style="margin-top:4px">
-      <button class="gold" onclick="ev('tarot.gift',{coins:5,giftName:'Quà 01-10 xu',question:txt.value})">🎁 Quà 01–10 xu (1 lá)</button>
-      <button class="gold" onclick="ev('tarot.gift',{coins:30,giftName:'Quà 11-99 xu',question:txt.value})">🎁 Quà 11–99 xu (2 lá)</button>
-      <button class="gold" onclick="ev('tarot.gift',{coins:199,giftName:'Quà >99 xu',question:txt.value})">👑 Quà &gt;99 xu (3 lá)</button>
-    </div>
-    <div style="margin-top:4px">
-      <button onclick="ev('tarot.comment',{text:txt.value})">💬 Gửi bình luận / Câu hỏi</button>
-      <button onclick="ev('tarot.pray',{wish:txt.value})">🏮 Thả đèn cầu nguyện</button>
-      <button onclick="ev('tarot.claim')">✨ Claim nhận bài</button>
-    </div>
+    <div class="status-badge" id="conn">Đang tải trạng thái...</div>
   </div>
 
-  <!-- ĐIỀU KHIỂN ÂM THANH, NHẠC NỀN & GIỌNG ĐỌC -->
+  <!-- 2. NHẠC NỀN MP3 (LẶP VÔ HẠN & TỰ ĐỘNG DUCKING) + GIỌNG ĐỌC -->
   <div class="box">
-    <h2>Điều khiển Âm thanh & Giọng đọc</h2>
-    <div>
-      <button onclick="rpc('tarot.skip')">⏭ Bỏ qua lượt đang đọc</button>
-      <button onclick="if(confirm('Xoá toàn bộ hàng chờ?'))rpc('tarot.reset')">🗑 Reset hàng chờ</button>
-    </div>
+    <h2>2. Nhạc Nền MP3 &amp; Giọng Đọc</h2>
+    <label>🎵 Chọn file nhạc nền MP3 (chạy lặp vô hạn, tự giảm âm khi đọc bài):</label>
+    <input type="file" id="bgmFile" accept="audio/mp3,audio/*" onchange="uploadBgm(this)">
+    <div class="bgm-status" id="bgmInfo">Đang dùng: Nhạc Vũ Trụ Mặc Định</div>
 
-    <label>Chọn nhạc nền MP3 (Phát trên màn hình Live)</label>
-    <div class="mp3-bar">
-      <input type="file" id="admMp3" accept="audio/mp3,audio/*" style="font-size:13px">
-      <button onclick="rpc('audio.control',{action:'toggle'})">⏯ Phát/Dừng</button>
-    </div>
+    <label>Âm lượng nhạc nền (khi rảnh): <span id="mvVal">40%</span></label>
+    <input type="range" min="0" max="1" step="0.05" id="mv" onchange="updateVol()">
 
-    <label>Âm lượng nhạc nền</label>
-    <input type="range" min="0" max="1" step=".05" id="mv" onchange="rpc('tarot.updateSettings',{musicVolume:+mv.value})">
-
-    <label>Chọn giọng đọc tiếng Việt</label>
-    <select id="vp" onchange="rpc('tarot.updateSettings',{ttsVoice:vp.value})">
-      <option value="vi-VN-nu">Giọng Nữ Huyền Bí (vi-VN)</option>
-      <option value="vi-VN-nam">Giọng Nam Trầm Ấm (vi-VN)</option>
-      <option value="maichi">ZeroTTS — Mai Chi</option>
+    <label>🎙️ Lựa chọn giọng đọc Thần Ra:</label>
+    <select id="voiceSelect" onchange="rpc('tarot.updateSettings',{ttsVoice:this.value})">
+      <option value="nu-huyen-bi">🌟 Giọng Nữ Huyền Bí (Thanh tao, truyền cảm)</option>
+      <option value="nam-tram-am">🔥 Giọng Nam Trầm Ấm (Uy nghiêm, sâu lắng)</option>
+      <option value="tien-tri">🌌 Giọng Tiên Tri Vũ Trụ (Chậm rãi, thần thái)</option>
+      <option value="nu-diu-dang">🌸 Giọng Nữ Dịu Dàng (Chữa lành, nhẹ nhàng)</option>
+      <option value="nam-co-dai">⚡ Giọng Nam Cổ Đại (Mạnh mẽ, dứt khoát)</option>
+      <option value="maichi">🤖 Giọng AI ZeroTTS (Mai Chi)</option>
     </select>
 
-    <label>Âm lượng giọng đọc Ra</label>
-    <input type="range" min="0" max="1" step=".05" id="tv" onchange="rpc('tarot.updateSettings',{ttsVolume:+tv.value})">
+    <label>Âm lượng giọng đọc: <span id="tvVal">95%</span></label>
+    <input type="range" min="0" max="1" step="0.05" id="tv" onchange="updateVol()">
+    <button onclick="testVoice()">🔊 Nghe thử giọng đọc hiện tại</button>
+  </div>
 
+  <!-- 3. BẬT/TẮT GIỌNG ĐỌC THEO SẢNH & CẤU HÌNH BÀI -->
+  <div class="box">
+    <h2>3. Cấu Hình Giọng Nói Theo Sảnh &amp; Lượt Đọc</h2>
     <label class="chk-row">
-      <input type="checkbox" id="tts" onchange="rpc('tarot.updateSettings',{ttsEnabled:tts.checked})">
-      <span>Bật giọng đọc bài (Tổng)</span>
+      <input type="checkbox" id="tts" onchange="rpc('tarot.updateSettings',{ttsEnabled:this.checked})">
+      <span>Bật tổng giọng đọc AI / Tiếng Việt (Bao gồm cả VIP Gift)</span>
+    </label>
+    <label class="chk-row">
+      <input type="checkbox" id="ttsPri" onchange="rpc('tarot.updateSettings',{ttsPriorityEnabled:this.checked})">
+      <span>Bật giọng đọc cho <b>Sảnh Ưu Tiên</b> (Follow / Share)</span>
+    </label>
+    <label class="chk-row">
+      <input type="checkbox" id="ttsNor" onchange="rpc('tarot.updateSettings',{ttsNormalEnabled:this.checked})">
+      <span>Bật giọng đọc cho <b>Sảnh Thường</b> (Vào live &amp; Thả tim)</span>
     </label>
 
-    <label class="chk-row">
-      <input type="checkbox" id="ntts" onchange="rpc('tarot.updateSettings',{normalTtsEnabled:ntts.checked})">
-      <span>Bật giọng đọc bài cho hàng Sảnh Thường</span>
-    </label>
+    <label>Số lá bài cho người ở Sảnh Chờ:</label>
+    <select id="lc" onchange="rpc('tarot.updateSettings',{lobbyCards:+this.value})">
+      <option value="1">1 lá bài</option>
+      <option value="2">2 lá bài</option>
+      <option value="3">3 lá bài</option>
+    </select>
 
-    <div style="display:grid;grid
+    <label>Thời gian chờ đọc lại miễn phí (phút):</label>
+    <input id="rp" type="number" min="1" max="180" onchange="rpc('tarot.updateSettings',{repeatAfterMin:+this.value})">
+
+    <div style="margin-top:8px">
+      <button onclick="rpc('tarot.skip')">⏭️ Bỏ qua lượt đang đọc</button>
+      <button onclick="if(confirm('Xoá toàn bộ hàng chờ?'))rpc('tarot.reset')">🗑️ Reset toàn bộ sảnh chờ</button>
+    </div>
+  </div>
+
+  <!-- 4. GIẢ LẬP TƯƠNG TÁC & TẶNG QUÀ KÈM CÂU HỎI -->
+  <div class="box">
+    <h2>4. Giả Lập Sự Kiện &amp; Tặng Quà Theo Mức Xu</h2>
+    <label>Tên người xem:</label>
+    <input id="u" value="Minh Tâm" placeholder="Tên người xem">
+    
+    <label>Câu hỏi / Bình luận của người xem (dùng cho VIP tặng quà hoặc cầu nguyện):</label>
+    <input id="txt" value="Chuyện tình cảm của em sắp tới có khởi sắc không ạ?" placeholder="Nhập câu hỏi tình duyên, công việc, tài lộc...">
+
+    <div>
+      <button onclick="ev('tarot.like',{count:5})">💖 Vào live &amp; Thả tim (Vào Sảnh Thường)</button>
+      <button onclick="ev('tarot.follow')">⭐ Follow (Vào Sảnh Ưu Tiên)</button>
+      <button onclick="ev('tarot.claim')">✨ Claim / Đón nhận bài</button>
+      <button onclick="ev('tarot.comment',{text:txt.value})">💬 Gửi bình luận / Câu hỏi</button>
+    </div>
+
+    <label style="margin-top:10px">🎁 Tặng quà theo mức xu (kèm câu hỏi ở ô trên):</label>
+    <div style="display:flex; gap:6px; align-items:center;">
+      <input id="coins" type="number" value="25" min="1" style="width:110px; margin:0;" placeholder="Số xu">
+      <button class="gold" onclick="ev('tarot.gift',{coins:+coins.value,giftName:'Gói '+coins.value+' xu',question:txt.value})">👑 Gửi Quà Xu</button>
+    </div>
+    <div style="margin-top:6px">
+      <button onclick="ev('tarot.gift',{coins:5,giftName:'Gói 1–10 xu',question:txt.value})">Gói 1–10 xu (1 lá)</button>
+      <button onclick="ev('tarot.gift',{coins:30,giftName:'Gói 11–99 xu',question:txt.value})">Gói 11–99 xu (2 lá)</button>
+      <button onclick="ev('tarot.gift',{coins:150,giftName:'Gói ≥ 100 xu',question:txt.value})">Gói ≥ 100 xu (3 lá)</button>
+    </div>
+  </div>
+
+  <!-- 5. HÀNG CHỜ HIỆN TẠI -->
+  <div class="box">
+    <h2>5. Hàng Chờ Trực Tuyến</h2>
+    <div class="q" id="queues">Đang tải...</div>
+  </div>
+
+  <!-- 6. XEM THỬ LỜI ĐỌC BÀI UYỂN CHUYỂN CỦA THẦN RA -->
+  <div class="box">
+    <h2>6. Xem Thử Lời Phán Bài (Kèm Câu Hỏi)</h2>
+    <div>
+      <button onclick="prev(1)">Xem thử 1 lá</button>
+      <button onclick="prev(2)">Xem thử 2 lá (VIP)</button>
+      <button class="gold" onclick="prev(3)">Xem thử 3 lá (VIP ≥ 100 xu)</button>
+    </div>
+    <pre id="prev">Bấm nút phía trên để xem thử lời luận giải uyển chuyển của Thần Ra...</pre>
+  </div>
+
+  <!-- 7. NHẬT KÝ HỆ THỐNG -->
+  <div class="box" style="grid-column: 1 / -1;">
+    <h2>7. Nhật Ký Sự Kiện &amp; JSON-RPC</h2>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const log = (t) => { $('log').textContent = (t + '\n' + $('log').textContent).slice(0, 4500); };
+
+let n = 0;
+async function rpc(method, params = {}) {
+  const r = await (await fetch('/rpc', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: ++n, method, params })
+  })).json();
+  log(`${method} → ${JSON.stringify(r.result ?? r.error).slice(0, 180)}`);
+  return r.result;
+}
+
+const ev = (m, p = {}) => rpc(m, { user: $('u').value, uniqueId: 'adm_' + $('u').value.toLowerCase().replace(/\s+/g, '_'), ...p });
+
+function updateVol() {
+  $('mvVal').textContent = Math.round($('mv').value * 100) + '%';
+  $('tvVal').textContent = Math.round($('tv').value * 100) + '%';
+  rpc('tarot.updateSettings', { musicVolume: +$('mv').value, ttsVolume: +$('tv').value });
+}
+
+async function uploadBgm(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  $('bgmInfo').textContent = 'Đang tải lên: ' + file.name + '...';
+  try {
+    const res = await fetch('/api/bgm', {
+      method: 'POST',
+      headers: { 'X-Filename': encodeURIComponent(file.name) },
+      body: file
+    });
+    const j = await res.json();
+    if (j.ok) {
+      $('bgmInfo').textContent = '🎵 Đang phát lặp vô hạn: ' + j.name;
+      log(`Đã cập nhật nhạc nền MP3: ${j.name}`);
+    } else {
+      $('bgmInfo').textContent = 'Lỗi tải nhạc: ' + (j.error || 'Không xác định');
+    }
+  } catch (e) {
+    $('bgmInfo').textContent = 'Lỗi tải file MP3: ' + e.message;
+  }
+}
+
+async function prev(c) {
+  const r = await rpc('tarot.preview', { cards: c, user: $('u').value, question: $('txt').value });
+  $('prev').textContent = `[${r.tierLabel}]\nBài rút: ` + r.cards.map(x => x.vn).join(' · ') + '\n\n' + r.lines.join('\n\n');
+}
+
+function testVoice() {
+  const sampleText = `Thần Ra chào ${$('u').value}. Giữa cổng thiên hà huyền bí, ánh sáng thái dương đang soi chiếu vận mệnh của bạn.`;
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(sampleText);
+    u.lang = 'vi-VN';
+    const v = $('voiceSelect').value;
+    if (v === 'nam-tram-am') { u.pitch = 0.78; u.rate = 0.92; }
+    else if (v === 'tien-tri') { u.pitch = 0.88; u.rate = 0.84; }
+    else if (v === 'nu-diu-dang') { u.pitch = 1.18; u.rate = 0.96; }
+    else if (v === 'nam-co-dai') { u.pitch = 0.72; u.rate = 1.02; }
+    else { u.pitch = 1.05; u.rate = 0.95; }
+    window.speechSynthesis.speak(u);
+  }
+}
+
+const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+ws.onmessage = m => {
+  const j = JSON.parse(m.data);
+  if (j.method === 'tarot.state') {
+    const s = j.params;
+    const L = (a) => a.map(p => `<span>${p.user}${p.coins ? ` (${p.coins} xu)` : ''}${p.question ? ` [Hỏi: ${p.question}]` : ''}</span>`).join('') || '—';
+    $('queues').innerHTML =
+      `<b>👑 Hàng chờ Quà VIP (${s.giftQueue.length}):</b> ${L(s.giftQueue)}<br><br>` +
+      `<b>⭐ Sảnh Ưu Tiên (${s.lobby.priority.length}):</b> ${L(s.lobby.priority)}<br><br>` +
+      `<b>💖 Sảnh Thường (${s.lobby.normal.length}):</b> ${L(s.lobby.normal)}<br><br>` +
+      `<b>🔮 Đang đọc bài:</b> ${s.current ? `<span>${s.current.user}</span>` : '—'}`;
+
+    $('conn').textContent = s.tiktok.connected
+      ? `🟢 Đã kết nối TikTok Live: @${s.tiktok.username} (${s.tiktok.viewerCount} người xem)`
+      : (s.settings.autoSim ? '🤖 Đang chạy Chế độ Demo Tự Động' : (s.tiktok.lastError || '⚪ Chưa kết nối TikTok Live'));
+
+    $('mv').value = s.settings.musicVolume;
+    $('mvVal').textContent = Math.round(s.settings.musicVolume * 100) + '%';
+    $('tv').value = s.settings.ttsVolume;
+    $('tvVal').textContent = Math.round(s.settings.ttsVolume * 100) + '%';
+    $('tts').checked = !!s.settings.ttsEnabled;
+    $('ttsPri').checked = s.settings.ttsPriorityEnabled !== false;
+    $('ttsNor').checked = s.settings.ttsNormalEnabled !== false;
+    if (s.settings.ttsVoice) $('voiceSelect').value = s.settings.ttsVoice;
+    if (s.settings.bgmName) $('bgmInfo').textContent = '🎵 Nhạc nền hiện tại: ' + s.settings.bgmName;
+    $('lc').value = s.settings.lobbyCards;
+    if (document.activeElement !== $('rp')) $('rp').value = s.settings.repeatAfterMin;
+  } else if (j.method === 'event.log') {
+    log(`${j.params.icon} ${j.params.text}`);
+  }
+};
+</script>
+</body>
+</html>
