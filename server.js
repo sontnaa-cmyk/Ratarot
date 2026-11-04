@@ -20,12 +20,12 @@ const DECK_FILE = path.join(DATA_DIR, 'cards.json');
 fs.mkdirSync(TTS_CACHE_DIR, { recursive: true });
 
 if (!fs.existsSync(DECK_FILE)) {
-  console.error('Chưa có data/cards.json — chạy "node tools/build-deck.mjs" trước.');
+  console.error('Chưa có data/cards.json — hãy kiểm tra lại thư mục data.');
   process.exit(1);
 }
 const DECK = JSON.parse(fs.readFileSync(DECK_FILE, 'utf8')).cards;
 
-// ---- Bộ lọc spam / ký tự lạ (kế thừa từ dự án Chùa Online) ----
+// ---- Bộ lọc spam / từ ngữ tiêu cực ----
 const WEIRD_SPAM_RE = /[\u{12000}-\u{1254F}\uFDFD\u2800-\u28FF\u2580-\u259F]|[\u0300-\u036F]{3,}/u;
 const BRACKET_EMOTE_RE = /\[[^\]]{1,24}\]/g;
 const ALLOWED_VI_TEXT_RE = /[^0-9a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠ-ỹ\s.,!?]/g;
@@ -70,7 +70,7 @@ class ZeroTTSManager {
   }
 
   resolvePythonBin() {
-    const cands = [path.join(ROOT, '.venv', 'Scripts', 'python.exe'), path.join(ROOT, '.venv', 'bin', 'python')];  // Windows | macOS/Linux
+    const cands = [path.join(ROOT, '.venv', 'Scripts', 'python.exe'), path.join(ROOT, '.venv', 'bin', 'python')];
     for (const c of cands) if (fs.existsSync(c)) return c;
     return process.platform === 'win32' ? 'python' : 'python3';
   }
@@ -78,7 +78,7 @@ class ZeroTTSManager {
   startWorker() {
     const pyBin = this.resolvePythonBin();
     const scriptPath = path.join(ROOT, 'tts_worker.py');
-    console.log(`[ZeroTTS] Khởi chạy worker với ${pyBin} (Giọng mặc định: Mai Chi)...`);
+    console.log(`[ZeroTTS] Khởi chạy worker với ${pyBin}...`);
 
     this.status = 'loading';
     this.proc = spawn(pyBin, [scriptPath], {
@@ -126,7 +126,7 @@ class ZeroTTSManager {
         this.voice = msg.voice || 'maichi';
         this.voices = msg.voices || ['maichi'];
         this.model = msg.model || this.model;
-        console.log(`[ZeroTTS] Sẵn sàng sau ${msg.loadSec}s! Giọng: ${this.voice} (${this.voices.join(', ')})`);
+        console.log(`[ZeroTTS] Sẵn sàng! Giọng: ${this.voice}`);
         broadcastNotification('tts.status', this.getStatus());
       } else if (msg.type === 'result' && msg.id != null) {
         const entry = this.pending.get(msg.id);
@@ -140,16 +140,14 @@ class ZeroTTSManager {
         this.status = 'error';
         broadcastNotification('tts.status', this.getStatus());
       }
-    } catch (err) {
-      console.log('[ZeroTTS stdout]', line);
-    }
+    } catch (_) {}
   }
 
   getStatus() {
     return {
       ready: this.ready,
       status: this.status,
-      engine: 'ZeroTTS (zeroweight-ai/ZeroTTS)',
+      engine: 'ZeroTTS',
       voice: state.settings.ttsVoice || this.voice || 'maichi',
       voices: this.voices,
       model: this.model
@@ -189,14 +187,14 @@ class ZeroTTSManager {
 }
 
 // ============================================================================
-// 3. TRẠNG THÁI & HÀNG CHỜ HAI SẢNH
+// CẤU HÌNH TRẠNG THÁI & HÀNG CHỜ
 // ============================================================================
 const DEFAULT_SETTINGS = {
   ttsEnabled: true, ttsVoice: 'maichi', musicVolume: 0.35, ttsVolume: 0.95,
-  lobbyCards: 1,          // số lá cho người đọc bài từ sảnh (không tặng quà)
-  repeatAfterMin: 20,     // người đã được đọc, sau bấy nhiêu phút mới được vào sảnh đọc miễn phí lần nữa
-  doneSlots: 3,           // số chỗ "người đã được đọc bài" mỗi bên chân thần Ra
-  autoSim: false, autoSimIntervalMs: 2600,
+  lobbyCards: 1,
+  repeatAfterMin: 20,
+  doneSlots: 3,
+  autoSim: true, autoSimIntervalMs: 2600,
 };
 const state = {
   settings: { ...DEFAULT_SETTINGS },
@@ -206,8 +204,9 @@ const state = {
 function loadState() {
   try {
     const j = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
-    Object.assign(state.settings, j.settings || {}); Object.assign(state.stats, j.stats || {});
-  } catch (_) { /* lần chạy đầu */ }
+    Object.assign(state.settings, j.settings || {});
+    Object.assign(state.stats, j.stats || {});
+  } catch (_) {}
 }
 let saveTimer = null;
 function saveState() {
@@ -216,14 +215,14 @@ function saveState() {
 }
 loadState();
 
-const lobby = { priority: [], normal: [] };   // sảnh chờ (FIFO)
-const giftQueue = [];                          // người tặng quà — luôn được đọc trước sảnh
-const doneList = [];                           // người đã được đọc: đứng cạnh chân thần Ra (mới nhất ở đầu)
-const prayerSpeech = [];                       // hàng đọc lời cầu nguyện (chen giữa các lượt đọc bài)
+const lobby = { priority: [], normal: [] };
+const giftQueue = [];
+const doneList = [];
+const prayerSpeech = [];
 let current = null;
-let prioStreak = 0;                            // đếm: 2 lượt sảnh ưu tiên rồi 1 lượt sảnh thường
+let prioStreak = 0;
 let engineBusy = false;
-const claimWaiting = new Set();                // đã gõ "claim" khi đang được đọc
+const claimWaiting = new Set();
 
 const keyOf = (p) => String(p.uniqueId || p.user || 'khach').toLowerCase();
 const now = () => Date.now();
@@ -248,24 +247,40 @@ function pushState() {
 }
 const logEvent = (icon, text) => broadcastNotification('event.log', { icon, text, t: now() });
 
-// ---- Quà tặng → số lá bài (theo bảng quy tắc) ----
 function giftTier(coins) {
   if (coins >= 100) return { tier: 3, cards: 3, label: 'Siêu cao cấp' };
   if (coins >= 11) return { tier: 2, cards: 2, label: 'Cao cấp' };
   return { tier: 1, cards: 1, label: 'Cao' };
 }
 
-// ---- Các sự kiện tương tác ----
-function ev_join(p) {                       // tham gia phiên live → sảnh THƯỜNG (bên phải)
+// ----------------------------------------------------------------------------
+// XỬ LÝ SỰ KIỆN: CHỐNG NGHẼN DO NGƯỜI LƯỚT QUA
+// ----------------------------------------------------------------------------
+// 1. Vào live xem: CHỈ ghi nhận đang xem, KHÔNG đưa vào sảnh chờ
+function ev_join(p) {
   const me = person(p);
-  if (isKnown(me.key)) return { ok: true, note: 'đã có mặt' };
-  lobby.normal.push({ ...me, joinedAt: now() });
-  broadcastNotification('lobby.join', { ...pub(me), lobby: 'normal' });
-  logEvent('🚪', `${me.user} bước vào Sảnh Thường`);
-  pushState(); kick();
-  return { ok: true, lobby: 'normal' };
+  return { ok: true, note: 'đang xem live' };
 }
-function ev_follow(p, kind = 'follow') {    // follow / share → sảnh ƯU TIÊN (bên trái)
+
+// 2. Thả tim (Like): ĐIỀU KIỆN CHÍNH THỨC để xếp hàng vào Sảnh Thường
+function ev_like(p, count = 1) {
+  state.stats.likes += count; saveState();
+  const me = person(p);
+  broadcastNotification('person.pray', { ...pub(me), count });
+
+  // Kiểm tra nếu chưa từng có trong sảnh, chưa đọc và không đọc gần đây -> Thêm vào Sảnh Thường
+  if (!isKnown(me.key)) {
+    lobby.normal.push({ ...me, joinedAt: now() });
+    broadcastNotification('lobby.join', { ...pub(me), lobby: 'normal' });
+    logEvent('💖', `${me.user} thả tim → Vào Sảnh Thường`);
+    pushState(); kick();
+    return { ok: true, queued: true, lobby: 'normal' };
+  }
+  return { ok: true, queued: false };
+}
+
+// 3. Follow / Share: Bước thẳng vào Sảnh Ưu Tiên
+function ev_follow(p, kind = 'follow') {
   const me = person(p);
   if (current && current.key === me.key) return { ok: true, note: 'đang được đọc' };
   if (inList(lobby.priority, me.key) >= 0 || inList(giftQueue, me.key) >= 0) return { ok: true, note: 'đã ở sảnh ưu tiên' };
@@ -274,22 +289,18 @@ function ev_follow(p, kind = 'follow') {    // follow / share → sảnh ƯU TI�
   const entry = i >= 0 ? lobby.normal.splice(i, 1)[0] : { ...me, joinedAt: now() };
   lobby.priority.push(entry);
   broadcastNotification(i >= 0 ? 'lobby.move' : 'lobby.join', { ...pub(entry), lobby: 'priority', from: i >= 0 ? 'normal' : null });
-  logEvent(kind === 'share' ? '🔁' : '💜', `${me.user} ${kind === 'share' ? 'chia sẻ' : 'theo dõi'} → Sảnh Ưu Tiên`);
+  logEvent(kind === 'share' ? '🔁' : '💜', `${me.user} ${kind === 'share' ? 'chia sẻ live' : 'theo dõi kênh'} → Sảnh Ưu Tiên`);
   pushState(); kick();
   return { ok: true, lobby: 'priority' };
 }
-function ev_like(p, count = 1) {            // thả tim → nhân vật chắp tay cầu nguyện
-  state.stats.likes += count; saveState();
-  const me = person(p);
-  broadcastNotification('person.pray', { ...pub(me), count });
-  return { ok: true };
-}
-function ev_gift(p, coins, giftName = 'Quà') {   // tặng quà → bước lên chính giữa, nhận 1/2/3 lá
+
+// 4. Tặng quà (Gift): Đứng giữa đài tế, đọc ngay lập tức 1/2/3 lá
+function ev_gift(p, coins, giftName = 'Quà') {
   const me = person(p); coins = Math.max(1, Number(coins) || 1);
   state.stats.gifts += 1; state.stats.coins += coins; saveState();
   for (const L of [lobby.priority, lobby.normal]) { const i = inList(L, me.key); if (i >= 0) L.splice(i, 1); }
   const gi = inList(giftQueue, me.key);
-  if (gi >= 0) {                              // cộng dồn quà trong lúc chờ
+  if (gi >= 0) {
     const g = giftQueue[gi]; g.coins += coins; g.giftName = giftName; Object.assign(g, giftTier(g.coins));
   } else {
     giftQueue.push({ ...me, coins, giftName, ...giftTier(coins), joinedAt: now() });
@@ -300,7 +311,9 @@ function ev_gift(p, coins, giftName = 'Quà') {   // tặng quà → bước lê
   pushState(); kick();
   return { ok: true, cards: t.cards };
 }
-function ev_claim(p) {                      // "đón nhận / claim" → lá bài bay đến người đó
+
+// 5. Đón nhận / Claim
+function ev_claim(p) {
   const me = person(p);
   if (current && current.key === me.key) { claimWaiting.add(me.key); return { ok: true, note: 'sẽ nhận khi kết thúc' }; }
   const d = doneList.find((x) => x.key === me.key);
@@ -311,7 +324,9 @@ function ev_claim(p) {                      // "đón nhận / claim" → lá b�
   pushState();
   return { ok: true };
 }
-function ev_pray(p, wish) {                 // cầu nguyện → đảnh lễ + thả Đèn Hoa Đăng + đọc lời cầu
+
+// 6. Cầu nguyện / Thả đèn
+function ev_pray(p, wish) {
   const me = person(p); const w = sanitizeWishText(wish) || 'Cầu bình an cho mọi người';
   state.stats.prayers += 1; saveState();
   broadcastNotification('lantern.release', { ...pub(me), wish: w });
@@ -320,6 +335,7 @@ function ev_pray(p, wish) {                 // cầu nguyện → đảnh lễ +
   kick();
   return { ok: true };
 }
+
 const CLAIM_RE = /(^|\s)(claim|don nhan|xin don nhan|nhan bai|con xin nhan|nhan ne)(\s|$|[!.])/;
 const PRAY_RE = /^(cau|nguyen|nam mo|a di da|binh an|chuc|xin)(\s|$|[,.!])|(\s|^)(nam mo|a di da phat)(\s|$)/;
 function ev_comment(p, text) {
@@ -339,23 +355,31 @@ function isKnown(key) {
   return (current && current.key === key) || inList(lobby.priority, key) >= 0 || inList(lobby.normal, key) >= 0 || inList(giftQueue, key) >= 0 || recentlyDone(key);
 }
 
-// ============================================================================
-// 4. CHỌN NGƯỜI TIẾP THEO — quà lớn > vừa > nhỏ; rồi sảnh: 2 lượt ưu tiên : 1 lượt thường
-// ============================================================================
+// ----------------------------------------------------------------------------
+// THỨ TỰ BỐC BÀI: Quà tặng > 2 Sảnh Ưu Tiên : 1 Sảnh Thường
+// ----------------------------------------------------------------------------
 function pickNext() {
   if (giftQueue.length) {
     giftQueue.sort((a, b) => b.tier - a.tier || a.joinedAt - b.joinedAt);
     const g = giftQueue.shift(); return { ...g, source: 'gift' };
   }
   const pri = lobby.priority[0], nor = lobby.normal[0];
-  if (pri && (prioStreak < 2 || !nor)) { prioStreak = nor ? prioStreak + 1 : 0; lobby.priority.shift(); return { ...pri, source: 'priority', cards: state.settings.lobbyCards, tier: 0 }; }
-  if (nor) { prioStreak = 0; lobby.normal.shift(); return { ...nor, source: 'normal', cards: state.settings.lobbyCards, tier: 0 }; }
+  if (pri && (prioStreak < 2 || !nor)) {
+    prioStreak = nor ? prioStreak + 1 : 0;
+    lobby.priority.shift();
+    return { ...pri, source: 'priority', cards: state.settings.lobbyCards, tier: 0 };
+  }
+  if (nor) {
+    prioStreak = 0;
+    lobby.normal.shift();
+    return { ...nor, source: 'normal', cards: state.settings.lobbyCards, tier: 0 };
+  }
   return null;
 }
 
-// ============================================================================
-// 5. THẦN RA RÚT BÀI & ĐỌC THÔNG ĐIỆP
-// ============================================================================
+// ----------------------------------------------------------------------------
+// RÚT BÀI VÀ BIÊN SOẠN THÔNG ĐIỆP PHÂN CẤP
+// ----------------------------------------------------------------------------
 function drawCards(n) {
   const pool = [...DECK]; const out = [];
   for (let i = 0; i < n; i++) out.push(pool.splice(crypto.randomInt(pool.length), 1)[0]);
@@ -371,40 +395,111 @@ const kw1 = (c) => c.keywords.split(' · ')[0];
 
 function composeReading(entry, cards) {
   const seed = seedOf(entry.key + cards.map((c) => c.id).join());
-  const nm = entry.user;
-  const intro = pick([
-    `Ra chào ${nm}. Ánh sáng của Mặt Trời soi vào lá bài của bạn.`,
-    `${nm} ơi, vũ trụ vừa gửi đến bạn một thông điệp.`,
-    `Ánh dương của Ra đã chạm vào bài của ${nm}.`,
-  ], seed);
-  const outro = entry.tier === 3 ? 'Ra trân trọng món quà lớn của bạn. Nguyện ánh sáng vũ trụ che chở bạn trên mọi hành trình.'
-    : entry.tier === 2 ? 'Cảm ơn tấm lòng của bạn. Chúc bạn tỏa sáng như Mặt Trời.'
-    : entry.source === 'priority' ? 'Cảm ơn bạn đã đồng hành cùng Ra.' : 'Chúc bạn một ngày bình an.';
+  const nm = entry.user || 'Lữ khách';
+  const source = entry.source || (entry.tier > 0 ? 'gift' : 'normal');
+
+  const intros = [
+    `Ra chào ${nm}. Ánh sáng Mặt Trời soi rọi vào tâm thức của bạn.`,
+    `${nm} ơi, cổng thiên hà vừa gửi đến bạn một thông điệp định mệnh.`,
+    `Ánh dương của Thần Ra đã chạm tới quẻ bài của ${nm}.`,
+    `Dưới vầng nhật quang thiêng liêng, Ra gửi trao chỉ dẫn cho ${nm}.`,
+    `Hỡi lữ khách ${nm}, vũ trụ thấu suốt ước nguyện trong tim bạn.`,
+    `Vầng hào quang thái dương khai mở vận trình mới dành riêng cho ${nm}.`
+  ];
+  const intro = pick(intros, seed);
+
+  let tierLabel = 'THÔNG ĐIỆP BÀI TAROT';
   let body = [];
-  if (cards.length === 1) {
+  let outro = '';
+
+  // 1. Sảnh Thường (Thả tim): 1 lá bài, ngắn gọn súc tích
+  if (source === 'normal' || (entry.tier === 0 && entry.source !== 'priority')) {
+    tierLabel = 'THÔNG ĐIỆP THẢ TIM • 1 LÁ TRỌNG TÂM';
     const c = cards[0];
-    body = [`Lá bài của bạn là ${c.vn}.`, `${ucFirst(c.keywords.split(' · ').slice(0, 2).join(' và '))}.`, c.message];
-  } else if (cards.length === 2) {
-    const [a, b] = cards; const pa = msgParts(a.message), pb = msgParts(b.message);
-    body = [`Hai lá bài của bạn là ${a.vn} và ${b.vn}.`, `${ucFirst(kw1(a))} gặp ${kw1(b)}.`,
-      `Kết hợp lại: ${lcFirst(pa.obs)}, và ${lcFirst(pb.adv)}.`];
-  } else {
-    const [a, b, c] = cards; const pb = msgParts(b.message), pc = msgParts(c.message);
-    body = [`Ba lá bài của bạn là ${a.vn}, ${b.vn} và ${c.vn}.`,
-      `Từ ${kw1(a)}, qua ${kw1(b)}, hướng đến ${kw1(c)}.`,
-      `Thông điệp kết hợp: ${lcFirst(pb.obs)}, vì vậy ${lcFirst(pc.adv)}.`];
+    const kw = c.keywords.split(' · ')[0];
+    body = [
+      `Lá bài của bạn là ${c.vn}.`,
+      `${ucFirst(kw)}: ${c.message.split(';')[0]}.`,
+      `Lời khuyên: Vững tâm, thuận theo tự nhiên.`
+    ];
+    outro = pick([
+      'Chúc bạn một ngày bình an và may mắn.',
+      'Hãy giữ tâm an định, vạn sự sẽ lành.',
+      'Ánh sáng bình minh luôn chờ đón bạn.'
+    ], seed);
   }
+  // 2. Sảnh Ưu Tiên (Follow / Share): 1-2 lá bài, lời khuyên và hành động
+  else if (source === 'priority' || (entry.isFollow && entry.tier === 0)) {
+    tierLabel = 'TRI ÂN FOLLOW • LỜI KHUYÊN ĐỊNH HƯỚNG';
+    if (cards.length === 1) {
+      const c = cards[0];
+      const p = msgParts(c.message);
+      body = [
+        `Lá bài dẫn lối là ${c.vn} (${c.keywords}).`,
+        `Thực tại: ${ucFirst(lcFirst(p.obs))}.`,
+        `Định hướng: ${ucFirst(lcFirst(p.adv))}. Hãy tin vào trực giác và bước tới dứt khoát.`
+      ];
+    } else {
+      const [a, b] = cards;
+      const pa = msgParts(a.message), pb = msgParts(b.message);
+      body = [
+        `Hai lá bài chỉ dẫn: ${a.vn} và ${b.vn}.`,
+        `${ucFirst(kw1(a))} kết hợp cùng ${kw1(b)}.`,
+        `Thông điệp: ${ucFirst(lcFirst(pa.obs))}. ${ucFirst(lcFirst(pb.adv))}.`
+      ];
+    }
+    outro = pick([
+      'Cảm ơn bạn đã theo dõi kênh. Nguyện vầng thái dương dẫn đường chỉ lối.',
+      'Tri ân bạn đã kết nối cùng Ra. Hãy giữ vững năng lượng tích cực này.',
+      'Sự đồng hành của bạn mang lại duyên lành lớn. Chúc bạn vạn sự hanh thông.'
+    ], seed);
+  }
+  // 3. Quà Tặng (Gift): 1-3 lá bài, phân tích sâu sắc toàn cảnh & lời sấm truyền
+  else {
+    const coins = entry.coins || 1;
+    tierLabel = `VIP GIFT (${coins} XU) • TIÊN TRI TOÀN CẢNH`;
+    if (cards.length === 1) {
+      const c = cards[0];
+      const p = msgParts(c.message);
+      body = [
+        `Lá bài hoàng kim: ${c.vn} (${c.keywords}).`,
+        `Vũ trụ báo hiệu: ${ucFirst(lcFirst(p.obs))}.`,
+        `Lời sấm truyền: ${ucFirst(lcFirst(p.adv))}. Quý nhân và thời cơ lớn đang hội tụ xung quanh bạn.`
+      ];
+    } else if (cards.length === 2) {
+      const [a, b] = cards;
+      const pa = msgParts(a.message), pb = msgParts(b.message);
+      body = [
+        `Cặp bài vinh quang: ${a.vn} và ${b.vn}.`,
+        `Chuyển biến thiên mệnh: Từ ${kw1(a)} thăng hoa thành ${kw1(b)}.`,
+        `Luận giải: ${ucFirst(lcFirst(pa.obs))}, mở đường cho ${lcFirst(pb.adv)}. Thành quả lớn đang đến rất gần.`
+      ];
+    } else {
+      const [a, b, c] = cards;
+      const pa = msgParts(a.message), pb = msgParts(b.message), pc = msgParts(c.message);
+      body = [
+        `Bộ ba thiên mệnh tối cao: ${a.vn}, ${b.vn} và ${c.vn}.`,
+        `Dòng chảy vận mệnh: Nền tảng ${kw1(a)} qua chuyển biến ${kw1(b)}, hướng tới kết quả ${kw1(c)}.`,
+        `Lời tiên tri toàn cảnh: ${ucFirst(lcFirst(pa.obs))}. ${ucFirst(lcFirst(pb.adv))}. Kết cuộc ${lcFirst(pc.adv)}. Mọi ước nguyện đang dần viên mãn.`
+      ];
+    }
+    outro = entry.tier === 3
+      ? 'Ra trân trọng món quà lớn của bạn. Nguyện quyền năng Mặt Trời che chở bạn phú quý viên mãn. Hãy comment ĐÓN NHẬN để giữ trọn vượng khí!'
+      : 'Thần Ra cảm ơn tấm lòng của bạn. Chúc bạn tỏa sáng rực rỡ và phát tài phát lộc.';
+  }
+
   const lines = [intro, ...body, outro];
-  return { lines, speech: lines.join(' ') };
+  return { tierLabel, lines, speech: lines.join(' ') };
 }
 
-// ============================================================================
-// 6. VÒNG LẶP ĐỌC BÀI (mỗi lần một người, theo timeline do server điều khiển)
-// ============================================================================
+// ----------------------------------------------------------------------------
+// ENGINE TIMELINE
+// ----------------------------------------------------------------------------
 const WALK_MS = 3400, DEAL_MS = 2500, HOLD_MS = 2400;
-const TS = Number(process.env.RA_TIME_SCALE || 1);   // chỉ dùng khi kiểm thử
+const TS = Number(process.env.RA_TIME_SCALE || 1);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function kick() { if (!engineBusy) setTimeout(engineLoop, 50); }
+
 async function speakInGap() {
   const pr = prayerSpeech.shift(); if (!pr) return false;
   const text = `Ra lắng nghe lời nguyện của ${pr.user}. ${pr.wish}`;
@@ -414,6 +509,7 @@ async function speakInGap() {
   await sleep(ms + 600);
   return true;
 }
+
 async function engineLoop() {
   if (engineBusy) return; engineBusy = true;
   try {
@@ -427,15 +523,16 @@ async function engineLoop() {
   } catch (e) { console.error('[Engine]', e); }
   engineBusy = false; pushState();
 }
+
 async function runReading(entry) {
   const cards = drawCards(entry.cards || 1);
-  const { lines, speech } = composeReading(entry, cards);
+  const { tierLabel, lines, speech } = composeReading(entry, cards);
   current = { ...entry, cards, phase: 'walk', skip: false };
   pushState();
   const tts = state.settings.ttsEnabled ? await zeroTts.synthesize(speech) : null;
   const speakMs = tts && tts.ok ? Math.round((tts.durationSec || 8) * 1000) : Math.max(6000, speech.length * 75);
   broadcastNotification('reading.start', {
-    ...pub(entry), source: entry.source, cards: cards.map(slim), lines, speech,
+    ...pub(entry), source: entry.source, cards: cards.map(slim), tierLabel, lines, speech,
     audioUrl: tts && tts.ok ? tts.url : null, speakMs, walkMs: WALK_MS, dealMs: DEAL_MS, holdMs: HOLD_MS,
   });
   logEvent('🔮', `Ra đọc ${cards.length} lá cho ${entry.user}: ${cards.map((c) => c.vn).join(', ')}`);
@@ -452,12 +549,13 @@ async function runReading(entry) {
   await sleep(900);
 }
 
-// ============================================================================
-// 7. KẾT NỐI TIKTOK LIVE
-// ============================================================================
+// ----------------------------------------------------------------------------
+// KẾT NỐI TIKTOK LIVE & GIẢ LẬP
+// ----------------------------------------------------------------------------
 let tiktokConn = null;
 const giftComboTracker = new Map();
 const likeThrottle = new Map();
+
 function extractUser(data) {
   const u = data?.user || data || {};
   const uniqueId = u.uniqueId || u.displayId || data?.uniqueId || '';
@@ -465,6 +563,7 @@ function extractUser(data) {
   const avatar = u.profilePictureUrl || u.avatarLarge?.urlList?.[0] || u.avatarThumb?.urlList?.[0] || u.avatarMedium?.urlList?.[0] || data?.profilePictureUrl || '';
   return { user, uniqueId, avatar };
 }
+
 async function resolveTikTokUsername(rawInput) {
   const input = String(rawInput || '').trim();
   if (!input) throw new Error('Vui lòng nhập @username hoặc link TikTok Live');
@@ -474,6 +573,7 @@ async function resolveTikTokUsername(rawInput) {
   }
   return input.replace(/^@/, '').split(/[/?#]/)[0].trim();
 }
+
 async function connectTikTokLive(usernameOrUrl) {
   const user = await resolveTikTokUsername(usernameOrUrl);
   if (!user) throw new Error('Không tìm thấy @username hợp lệ');
@@ -485,20 +585,28 @@ async function connectTikTokLive(usernameOrUrl) {
   c.on(ControlEvent.DISCONNECTED, () => { Object.assign(state.tiktok, { connected: false, connecting: false }); pushState(); });
   c.on(ControlEvent.ERROR, (err) => { state.tiktok.lastError = err?.message || String(err); pushState(); });
   c.on(WebcastEvent.ROOM_USER, (d) => { const v = Number(d?.total ?? d?.viewerCount ?? 0); if (v > 0) { state.tiktok.viewerCount = v; pushState(); } });
+  
+  // Member vào xem live KHÔNG xếp vào sảnh chờ
   c.on(WebcastEvent.MEMBER, (d) => ev_join(extractUser(d)));
-  c.on(WebcastEvent.CHAT, (d) => { const u = extractUser(d); ev_join(u); ev_comment(u, d?.content || d?.comment || ''); });
+  
+  // Bình luận
+  c.on(WebcastEvent.CHAT, (d) => { const u = extractUser(d); ev_comment(u, d?.content || d?.comment || ''); });
+  
+  // Thả tim / Like: Chạm vào màn hình để xếp hàng vào Sảnh Thường
   c.on(WebcastEvent.LIKE, (d) => {
     const u = extractUser(d); const k = keyOf(u); const t = now();
     if (t - (likeThrottle.get(k) || 0) < 1500) return; likeThrottle.set(k, t);
     if (likeThrottle.size > 800) likeThrottle.delete(likeThrottle.keys().next().value);
     ev_like(u, Math.min(15, Math.max(1, Number(d?.count ?? d?.likeCount ?? 1))));
   });
+
   c.on(WebcastEvent.FOLLOW, (d) => ev_follow(extractUser(d), 'follow'));
   c.on(WebcastEvent.SHARE, (d) => ev_follow(extractUser(d), 'share'));
   c.on(WebcastEvent.SOCIAL, (d) => {
     const a = String(d?.action || ''); const disp = String(d?.common?.displayText?.displayType || d?.displayType || '').toLowerCase();
     if (a === '1' || disp.includes('follow')) ev_follow(extractUser(d), 'follow'); else if (a === '3' || disp.includes('share')) ev_follow(extractUser(d), 'share');
   });
+
   c.on(WebcastEvent.GIFT, (d) => {
     const u = extractUser(d); const g = d?.gift || d?.giftDetails || {};
     const gid = String(d?.giftId || g?.id || 'gift'); const group = String(d?.groupId || `${u.uniqueId}_${gid}`);
@@ -509,6 +617,7 @@ async function connectTikTokLive(usernameOrUrl) {
     const coins = Math.max(1, Number(g?.diamondCount || d?.diamondCount || 1)) * delta;
     ev_gift(u, coins, (delta > 1 ? `${delta}x ` : '') + (g?.name || d?.giftName || 'Quà'));
   });
+
   try {
     const rs = await c.connect();
     Object.assign(state.tiktok, { connected: true, connecting: false, roomId: rs?.roomId || c.roomId || null }); pushState();
@@ -524,22 +633,26 @@ function disconnectTikTokLive() {
   return state.tiktok;
 }
 
-// ============================================================================
-// 8. GIẢ LẬP NGƯỜI XEM (kiểm thử / giữ nhiệt phòng live vắng)
-// ============================================================================
+// Giả lập
 let simTimer = null, simN = 0;
 const SIM_NAMES = ['Ngọc Anh', 'Minh Quân', 'Diệu Thảo', 'Hoàng Nam', 'Thanh Hà', 'Đức Thịnh', 'Bảo Châu', 'Gia Hân', 'Tuấn Kiệt', 'Mai Phương', 'Khánh Linh', 'Quốc Bảo', 'Thu Trang', 'Hải Đăng', 'Lan Chi', 'Việt Anh'];
 const SIM_WISH = ['Cầu cho gia đình luôn bình an', 'Nguyện mọi điều tốt đẹp sẽ đến', 'Chúc cả phòng live một ngày may mắn', 'Xin vũ trụ chỉ lối cho con', 'Bình an và hạnh phúc nhé'];
+
 function simStep() {
-  const r = Math.random(); const u = { user: SIM_NAMES[crypto.randomInt(SIM_NAMES.length)], uniqueId: `sim${crypto.randomInt(30)}` };
-  if (r < 0.34) ev_join(u);
-  else if (r < 0.52) ev_follow(u, Math.random() < 0.5 ? 'follow' : 'share');
-  else if (r < 0.7) ev_like(u, 5);
-  else if (r < 0.82) ev_pray(u, SIM_WISH[crypto.randomInt(SIM_WISH.length)]);
-  else if (r < 0.92) ev_claim(u);
-  else { const c = [1, 5, 10, 25, 49, 120, 299][crypto.randomInt(7)]; ev_gift(u, c, c >= 100 ? 'Galaxy' : c >= 11 ? 'Đèn lưu ly' : 'Hoa hồng'); }
+  const r = Math.random();
+  const u = { user: SIM_NAMES[crypto.randomInt(SIM_NAMES.length)], uniqueId: `sim${crypto.randomInt(30)}` };
+  // Người xem giả lập thả tim để bước vào sảnh chờ
+  if (r < 0.40) ev_like(u, 5);
+  else if (r < 0.60) ev_follow(u, Math.random() < 0.5 ? 'follow' : 'share');
+  else if (r < 0.75) ev_pray(u, SIM_WISH[crypto.randomInt(SIM_WISH.length)]);
+  else if (r < 0.88) ev_claim(u);
+  else {
+    const c = [1, 5, 10, 25, 49, 120, 299][crypto.randomInt(7)];
+    ev_gift(u, c, c >= 100 ? 'Galaxy' : c >= 11 ? 'Đèn lưu ly' : 'Hoa hồng');
+  }
   simN++;
 }
+
 function configureAutoSim(on) {
   state.settings.autoSim = !!on; clearInterval(simTimer);
   if (on) simTimer = setInterval(simStep, state.settings.autoSimIntervalMs);
@@ -547,9 +660,7 @@ function configureAutoSim(on) {
   return { autoSim: state.settings.autoSim };
 }
 
-// ============================================================================
-// 9. JSON-RPC 2.0
-// ============================================================================
+// JSON-RPC 2.0
 async function handleRpcCall(method, p = {}) {
   switch (method) {
     case 'tarot.getState': return getPublicState();
@@ -563,7 +674,7 @@ async function handleRpcCall(method, p = {}) {
     case 'tarot.pray': return ev_pray(p, p.wish);
     case 'tarot.comment': return ev_comment(p, p.text);
     case 'tarot.skip': if (current) current.skip = true; return { ok: true };
-    case 'tarot.preview': {            // xem thử lời đọc của Ra, không phát, không tốn lượt
+    case 'tarot.preview': {
       const n = Math.min(3, Math.max(1, Number(p.cards) || 1));
       const cs = p.cardIds ? p.cardIds.map((id) => DECK.find((c) => c.id === id)).filter(Boolean) : drawCards(n);
       return { cards: cs.map(slim), ...composeReading({ key: 'preview', user: p.user || 'Bạn', tier: n === 3 ? 3 : n === 2 ? 2 : 0, source: 'normal' }, cs) };
