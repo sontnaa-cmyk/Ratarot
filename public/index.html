@@ -6,38 +6,41 @@
 <title>Cổng Vũ Trụ Của Thần Ra — TikTok Live 9:16</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/live.css">
 </head>
 <body>
 <div class="workspace">
   <div class="stage" id="stage">
-    <!-- Nền tinh vân WebGL -->
+    <!-- Nền cổng thiên hà WebGL -->
     <canvas id="bg" class="bgc" width="540" height="960"></canvas>
     
-    <!-- Cột tháp Ai Cập Obelisk -->
+    <!-- Kiến trúc Cổng Thiên Hà & Cột Obelisk huyền bí -->
     <svg class="ruins l" viewBox="0 0 260 420">
       <defs>
         <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#5b42b8"/>
-          <stop offset="1" stop-color="#0e052d"/>
+          <stop offset="0" stop-color="#4e31aa"/>
+          <stop offset="0.5" stop-color="#210d5c"/>
+          <stop offset="1" stop-color="#08021e"/>
         </linearGradient>
       </defs>
-      <polygon points="70,420 78,60 100,0 122,60 130,420" fill="url(#rg)" stroke="#f1c453" stroke-width="2"/>
-      <polygon points="0,420 0,330 60,330 60,300 140,300 140,260 200,260 200,420" fill="url(#rg)" stroke="#f1c453" stroke-width="1.5" opacity=".95"/>
-      <path d="M100,12 L100,380" stroke="#ffd45e" stroke-width="2" opacity=".6"/>
-      <path d="M0,330 H60 M60,300 H140 M140,260 H200" stroke="#ffd45e" stroke-width="3" opacity=".8"/>
+      <polygon points="70,420 78,50 100,0 122,50 130,420" fill="url(#rg)" stroke="#f1c453" stroke-width="2.2"/>
+      <polygon points="0,420 0,320 60,320 60,290 140,290 140,250 200,250 200,420" fill="url(#rg)" stroke="#f1c453" stroke-width="1.6" opacity=".92"/>
+      <path d="M100,12 L100,380" stroke="#ffd45e" stroke-width="2" opacity=".65"/>
+      <path d="M0,320 H60 M60,290 H140 M140,250 H200" stroke="#ffd45e" stroke-width="3" opacity=".85"/>
     </svg>
     <svg class="ruins r" viewBox="0 0 260 420">
-      <polygon points="130,420 138,60 160,0 182,60 190,420" fill="url(#rg)" stroke="#f1c453" stroke-width="2"/>
-      <polygon points="260,420 260,330 200,330 200,300 120,300 120,260 60,260 60,420" fill="url(#rg)" stroke="#f1c453" stroke-width="1.5" opacity=".95"/>
-      <path d="M160,12 L160,380" stroke="#ffd45e" stroke-width="2" opacity=".6"/>
-      <path d="M260,330 H200 M200,300 H120 M120,260 H60" stroke="#ffd45e" stroke-width="3" opacity=".8"/>
+      <polygon points="130,420 138,50 160,0 182,50 190,420" fill="url(#rg)" stroke="#f1c453" stroke-width="2.2"/>
+      <polygon points="260,420 260,320 200,320 200,290 120,290 120,250 60,250 60,420" fill="url(#rg)" stroke="#f1c453" stroke-width="1.6" opacity=".92"/>
+      <path d="M160,12 L160,380" stroke="#ffd45e" stroke-width="2" opacity=".65"/>
+      <path d="M260,320 H200 M200,290 H120 M120,250 H60" stroke="#ffd45e" stroke-width="3" opacity=".85"/>
     </svg>
 
-    <!-- Vòng tròn ma trận ma thuật chuyển động -->
+    <!-- Vòng tròn Cổng Thiên Hà đa tầng -->
+    <div class="galaxy-gate-top"></div>
     <div class="ring r1"></div>
     <div class="ring r2"></div>
+    <div class="ring r3"></div>
     <div class="portal-glow"></div>
 
     <!-- Thần Ra (Shader WebGL) -->
@@ -45,65 +48,34 @@
     <canvas id="raGL" class="raGL" width="1110" height="810"></canvas>
     <canvas id="fx" width="1080" height="1920"></canvas>
 
-    <!-- Header & Thanh điều khiển trên màn hình chính -->
-    <header class="topbar">
-      <div class="top-group left">
-        <div class="pill live-badge">
-          <span class="dot" id="liveDot"></span>
-          <span id="liveText">CỔNG VŨ TRỤ • THẦN RA</span>
-        </div>
-        <!-- Nút Bật / Tắt Demo trực tiếp trên giao diện -->
-        <button id="btnToggleDemo" class="btn-demo-toggle" title="Bật/Tắt chế độ mô phỏng demo">
-          <span class="demo-led on" id="demoLed"></span>
-          <span id="demoText">DEMO: BẬT</span>
-        </button>
-      </div>
-
-      <div class="top-group right">
-        <!-- Bộ điều khiển Nhạc MP3 & Giọng đọc -->
-        <div class="audio-control-bar">
-          <label for="mp3UploadInput" class="btn-mp3-upload" title="Bấm để tải file MP3 từ máy của bạn">
-            <span class="icon">🎵</span>
-            <span id="mp3TrackName">Nhạc Vũ Trụ</span>
-          </label>
-          <input type="file" id="mp3UploadInput" accept="audio/mp3,audio/*" style="display:none">
-          <button id="btnPlayPauseMusic" class="btn-music-toggle" title="Phát / Dừng nhạc">⏸</button>
-          
-          <select id="voicePicker" class="voice-dropdown" title="Chọn giọng đọc tiếng Việt">
-            <option value="vi-VN-nu">Giọng Nữ Huyền Bí</option>
-            <option value="vi-VN-nam">Giọng Nam Trầm Ấm</option>
-            <option value="maichi">ZeroTTS (Mai Chi)</option>
-          </select>
-        </div>
-
-        <div class="pill stats">
-          <span>👁</span><b id="stView">0</b>
-          <span>💎</span><b id="stRead">0</b>
-          <span>✦</span><b id="stLike">0</b>
-        </div>
-      </div>
+    <!-- Thanh trạng thái trên cùng ĐÃ ĐƯỢC ẨN theo yêu cầu để khung hình 9:16 sạch đẹp -->
+    <header class="topbar" hidden>
+      <span id="liveDot"></span><span id="liveText"></span>
+      <b id="stView">0</b><b id="stRead">0</b><b id="stLike">0</b>
     </header>
 
+    <!-- Dòng thông báo sự kiện (Ticker) -->
     <div class="ticker" id="ticker"></div>
 
+    <!-- Bảng danh hiệu Thần Ra (Font chữ hỗ trợ đầy đủ dấu tiếng Việt) -->
     <div class="nameplate">
       <i>✦</i>
       <div>
         <h2>THẦN RA</h2>
-        <p>Thần Mặt Trời • Sức Mạnh Vô Tận • Khai Mở Thiên Mệnh</p>
+        <p>Thần Mặt Trời • Cổng Thiên Hà Huyền Bí • Khai Mở Vận Mệnh</p>
       </div>
       <i>✦</i>
     </div>
 
-    <!-- Người đã được đọc bài (đứng 2 bên đài tế thần Ra) -->
-    <div class="donehead" style="left:24px">NGƯỜI ĐÃ ĐƯỢC ĐỌC BÀI</div>
-    <div class="donehead" style="right:24px">NGƯỜI ĐÃ ĐƯỢC ĐỌC BÀI</div>
+    <!-- Người đã được đọc bài (2 bên đài tế thần Ra) -->
+    <div class="donehead" style="left:22px">NGƯỜI ĐÃ ĐƯỢC ĐỌC BÀI</div>
+    <div class="donehead" style="right:22px">NGƯỜI ĐÃ ĐƯỢC ĐỌC BÀI</div>
 
-    <!-- Vị trí đài tế người được đọc bài -->
+    <!-- Vị trí đài tế người đang được đọc bài -->
     <div class="spot"><i></i><b></b></div>
     <div class="spotlabel"><em>◆</em> CHỦ NHÂN QUẺ BÀI <em>◆</em></div>
 
-    <!-- SẢNH CHỜ LỚN -->
+    <!-- SẢNH CHỜ MỞ RỘNG (Chứa tới 15 người mỗi sảnh) -->
     <div class="zone pri">
       <h3>SẢNH ƯU TIÊN</h3>
       <div class="cnt" id="cntPri">0</div>
@@ -114,52 +86,53 @@
       <div class="cnt" id="cntNor">0</div>
     </div>
 
-    <!-- Các lớp chứa động: Người (chỉ Avatar), Lá bài, Đèn hoa đăng -->
+    <!-- Các lớp chứa động: Người xem, Lá bài, Đèn hoa đăng -->
     <div id="people"></div>
     <div id="cards"></div>
     <div id="lanterns"></div>
 
-    <!-- Phụ đề thông điệp bài đọc -->
+    <!-- Khung phụ đề lời phán bài -->
     <div class="caption" id="caption">
       <div class="cap-tier" id="capTier">THÔNG ĐIỆP BÀI TAROT</div>
       <small id="capWho"></small>
       <p id="capText"></p>
     </div>
 
+    <!-- Thông báo tặng quà (Tự động ẩn sau vài giây) -->
     <div class="banner" id="banner"></div>
 
-    <!-- BẢNG PHÍ & ĐẶC QUYỀN PHÍA DƯỚI -->
+    <!-- BẢNG QUY TẮC & MỨC XU PHÍA DƯỚI -->
     <div class="legend">
       <div class="legend-card free">
         <span class="legend-tag">💖 THẢ TIM / LIKE</span>
-        <p>Chạm tim màn hình<br>→ <b>Vào Sảnh Thường</b> (1 lá bài)</p>
+        <p>Vào live &amp; <b>Thả tim</b><br>→ <b>Vào Sảnh Thường</b> (1 lá)<br><small>Vái lạy 3 cái nhận quẻ</small></p>
       </div>
       <div class="legend-card follow">
         <span class="legend-tag">⭐ FOLLOW / SHARE</span>
-        <p>Follow kênh & Chia sẻ live<br>→ <b>Sảnh Ưu Tiên</b> (Lời khuyên sâu)</p>
+        <p>Follow &amp; Chia sẻ live<br>→ <b>Sảnh Ưu Tiên</b><br><small>Định hướng chuyên sâu</small></p>
       </div>
       <div class="legend-card gift">
-        <span class="legend-tag">👑 TẶNG QUÀ + HỎI</span>
-        <p><b>01–10 xu</b>: 1 lá · <b>11–99 xu</b>: 2 lá<br><b>&gt;99 xu</b>: 3 lá + <b>Trả lời câu hỏi</b></p>
+        <span class="legend-tag">👑 MỨC XU TẶNG QUÀ</span>
+        <p><b>1–10 xu</b>: 1 lá · <b>11–99 xu</b>: 2 lá<br><b>≥ 100 xu</b>: 3 lá + Trả lời câu hỏi</p>
       </div>
       <div class="legend-card action">
-        <span class="legend-tag">🕯 TƯƠNG TÁC</span>
-        <p>Comment <b>“đón nhận”</b> giữ vía<br>Comment <b>“cầu…”</b> thả hoa đăng</p>
+        <span class="legend-tag">🕯 ĐÓN NHẬN &amp; CẦU AN</span>
+        <p>Bình luận <b>“đón nhận”</b> giữ bài<br>Bình luận <b>“cầu…”</b> thả hoa đăng</p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Dock Điều Khiển Nhanh -->
+<!-- Menu điều khiển nhanh bên phải (Chỉ hiển thị mức xu, không hiển thị tên quà sai lệch) -->
 <div class="dock" id="dock">
-  <button data-a="like">💖 Thả tim (Vào sảnh)</button>
+  <button data-a="like">💖 Vào live &amp; Thả tim</button>
   <button data-a="follow">⭐ Follow (Sảnh ưu tiên)</button>
-  <button data-a="g1">🎁 Quà 01–10 xu (1 lá)</button>
-  <button data-a="g2">🎁 Quà 11–99 xu (2 lá)</button>
-  <button data-a="g3">👑 Quà &gt;99 xu (3 lá + Hỏi)</button>
+  <button data-a="g1">🎁 Gói 1–10 xu (1 lá)</button>
+  <button data-a="g2">🎁 Gói 11–99 xu (2 lá)</button>
+  <button data-a="g3">👑 Gói ≥ 100 xu (3 lá)</button>
   <button data-a="pray">🏮 Thả đèn cầu an</button>
-  <button data-a="claim">✨ Đón nhận bài</button>
-  <button data-a="auto" id="dockBtnAuto">Demo tự động: BẬT</button>
+  <button data-a="claim">✨ Claim / Đón nhận bài</button>
+  <button data-a="auto" id="dockBtnAuto">🤖 Tự động demo: BẬT</button>
 </div>
 
 <script src="/js/bg.js"></script>
