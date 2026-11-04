@@ -1,0 +1,17 @@
+{
+  "name": "ra-tarot-live",
+  "version": "1.0.0",
+  "description": "Cổng Vũ Trụ của Thần Ra — TikTok Live bốc bài Tarot tương tác (Bun.js + ZeroTTS)",
+  "main": "server.js",
+  "scripts": {
+    "build:cards": "node tools/build-cards-json.mjs",
+    "start": "bun run server.js",
+    "dev": "bun --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "tiktok-live-connector": "^2.1.0",
+    "ws": "^8.18.0"
+  }
+}

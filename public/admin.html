@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin — Cổng Vũ Trụ Thần Ra</title>
+<style>
+body{margin:0;background:#0a0530;color:#f4ecff;font:15px/1.45 'Be Vietnam Pro',system-ui,sans-serif;padding:20px;max-width:1100px;margin:auto}
+h1{color:#f1c453;font-size:22px}h2{color:#f1c453;font-size:15px;letter-spacing:1px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.box{border:1px solid rgba(241,196,83,.45);border-radius:14px;padding:14px;background:rgba(26,10,82,.6)}
+input,select{background:#12063a;color:#fff;border:1px solid #6a4fd0;border-radius:8px;padding:7px 9px;font:inherit;width:100%;margin:3px 0}
+button{background:#3b1fa8;color:#fff;border:1px solid #f1c453;border-radius:8px;padding:7px 12px;font:600 14px inherit;cursor:pointer;margin:3px 3px 3px 0}button:hover{background:#7b2ff7}
+pre{background:#05020f;border-radius:8px;padding:10px;max-height:240px;overflow:auto;font-size:12.5px;white-space:pre-wrap}
+.q span{display:inline-block;background:#12063a;border:1px solid #6a4fd0;border-radius:12px;padding:2px 10px;margin:2px;font-size:13px}
+</style></head><body>
+<h1>☀️ Admin — Cổng Vũ Trụ của Thần Ra</h1>
+<div class="grid">
+<div class="box"><h2>KẾT NỐI TIKTOK LIVE</h2><input id="uname" placeholder="@username hoặc link vt.tiktok.com"><button onclick="rpc('live.connect',{username:uname.value})">Kết nối</button><button onclick="rpc('live.disconnect')">Ngắt</button><button onclick="rpc('live.setAutoSim',{enabled:true})">Bật demo tự động</button><button onclick="rpc('live.setAutoSim',{enabled:false})">Tắt demo</button><div id="conn"></div></div>
+<div class="box"><h2>GIẢ LẬP SỰ KIỆN</h2><input id="u" value="Minh Tâm" placeholder="Tên người xem"><input id="coins" type="number" value="5" placeholder="Số xu"><input id="txt" value="cầu cho gia đình bình an" placeholder="Bình luận">
+<button onclick="ev('tarot.join')">Vào live</button><button onclick="ev('tarot.follow')">Follow</button><button onclick="ev('tarot.share')">Share</button><button onclick="ev('tarot.like',{count:8})">Thả tim</button><button onclick="ev('tarot.gift',{coins:+coins.value,giftName:'Quà thử'})">Tặng quà</button><button onclick="ev('tarot.claim')">Claim</button><button onclick="ev('tarot.comment',{text:txt.value})">Gửi bình luận</button></div>
+<div class="box"><h2>ĐIỀU KHIỂN</h2><button onclick="rpc('tarot.skip')">Bỏ qua lượt đang đọc</button><button onclick="if(confirm('Xoá toàn bộ hàng chờ?'))rpc('tarot.reset')">Reset hàng chờ</button>
+<label>Âm lượng nhạc nền <input type="range" min="0" max="1" step=".05" id="mv" onchange="rpc('tarot.updateSettings',{musicVolume:+mv.value})"></label>
+<label>Âm lượng giọng Ra <input type="range" min="0" max="1" step=".05" id="tv" onchange="rpc('tarot.updateSettings',{ttsVolume:+tv.value})"></label>
+<label><input type="checkbox" id="tts" style="width:auto" onchange="rpc('tarot.updateSettings',{ttsEnabled:tts.checked})"> Bật giọng đọc ZeroTTS</label>
+<label>Số lá cho người đọc từ sảnh <select id="lc" onchange="rpc('tarot.updateSettings',{lobbyCards:+lc.value})"><option>1</option><option>2</option><option>3</option></select></label>
+<label>Cho đọc lại miễn phí sau (phút) <input id="rp" type="number" onchange="rpc('tarot.updateSettings',{repeatAfterMin:+rp.value})"></label></div>
+<div class="box"><h2>HÀNG CHỜ HIỆN TẠI</h2><div class="q" id="queues"></div></div>
+<div class="box"><h2>XEM THỬ LỜI ĐỌC CỦA RA</h2><button onclick="prev(1)">1 lá</button><button onclick="prev(2)">2 lá</button><button onclick="prev(3)">3 lá</button><pre id="prev">—</pre></div>
+<div class="box"><h2>NHẬT KÝ JSON-RPC</h2><pre id="log"></pre></div>
+</div>
+<script>
+const $=id=>document.getElementById(id), log=(t)=>{$('log').textContent=(t+'\n'+$('log').textContent).slice(0,4000)};
+let n=0;async function rpc(method,params={}){const r=await(await fetch('/rpc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:++n,method,params})})).json();log(`${method} → ${JSON.stringify(r.result??r.error).slice(0,160)}`);return r.result}
+const ev=(m,p={})=>rpc(m,{user:$('u').value,uniqueId:'adm_'+$('u').value,...p});
+async function prev(c){const r=await rpc('tarot.preview',{cards:c});$('prev').textContent=r.cards.map(x=>x.vn).join(' · ')+'\n\n'+r.speech}
+const ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`);
+ws.onmessage=m=>{const j=JSON.parse(m.data);if(j.method==='tarot.state'){const s=j.params,L=(a)=>a.map(p=>`<span>${p.user}</span>`).join('')||'—';
+$('queues').innerHTML=`<b>Quà:</b> ${L(s.giftQueue)}<br><b>Sảnh ưu tiên:</b> ${L(s.lobby.priority)}<br><b>Sảnh thường:</b> ${L(s.lobby.normal)}<br><b>Đang đọc:</b> ${s.current?s.current.user:'—'}`;
+$('conn').textContent=s.tiktok.connected?`Đã kết nối @${s.tiktok.username}`:(s.tiktok.lastError||'Chưa kết nối');
+$('mv').value=s.settings.musicVolume;$('tv').value=s.settings.ttsVolume;$('tts').checked=s.settings.ttsEnabled;$('lc').value=s.settings.lobbyCards;if(document.activeElement!==$('rp'))$('rp').value=s.settings.repeatAfterMin}
+else if(j.method==='event.log')log(`${j.params.icon} ${j.params.text}`)};
+</script></body></html>
