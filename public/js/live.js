@@ -1,4 +1,5 @@
-// Điều phối màn hình Live 9:16: hai sảnh lớn, Thần Ra xào/rút/lật bài, đèn hoa đăng, claim bài.
+// Điều phối màn hình Live 9:16: hai sảnh lớn (15 người/sảnh), avatar khung viền tinh tế,
+// vào sảnh vái lạy 3 cái, Thần Ra xào/rút/lật bài, claim hiện bài bên cạnh avatar, thông báo quà tự ẩn chuẩn xác.
 (() => {
   const $ = (id) => document.getElementById(id);
   const stage = $('stage'), peopleEl = $('people'), cardsEl = $('cards'), lanternsEl = $('lanterns');
@@ -9,51 +10,46 @@
 
   const people = new Map();           // key -> {el, x, y}
   let S = null, likes = 0, energy = 0, reading = null, timers = [];
+  let bannerTimer = null;             // Bộ đếm thời gian tự ẩn thông báo tặng quà
   const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
   const hue = (s) => [...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 0);
-  const DECK = [540, 905], CARD_AR = 527 / 300;
+  const DECK = [540, 880], CARD_AR = 527 / 300;
   const orb = () => (window.RaPuppet ? RaPuppet.orb : [344, 201]);
   const cast = (k) => window.RaPuppet && RaPuppet.cast(k);
 
-  // ---------- Tọa độ nhân vật (tâm avatar) ----------
-  const L = [[75, 385], [172, 385], [75, 520]], R = [[1005, 385], [908, 385], [1005, 520]];
+  // ---------- Vị trí (tâm avatar) — Mở rộng Sảnh Chờ lên 15 người mỗi sảnh (5 cột x 3 hàng) ----------
+  const L = [[78, 360], [182, 360], [78, 495]], R = [[1002, 360], [898, 360], [1002, 495]];
+  const MAX_LOBBY_SHOW = 15;
   const slot = {
-    // Sảnh lớn chia đều 4 cột x 2 hàng
-    priority: (i) => ({ x: 85 + (i % 4) * 120, y: 1530 + (i >> 2) * 115, s: 1 }),
-    normal:   (i) => ({ x: 635 + (i % 4) * 120, y: 1530 + (i >> 2) * 115, s: 1 }),
-    gift:     (i) => { const p = [[344, 1180], [736, 1180], [250, 1250], [830, 1250]][i] || [540, 1220]; return { x: p[0], y: p[1], s: 1.15 }; },
-    spot:     { x: 540, y: 1140, s: 1.45 },
-    done:     (i) => { const p = (i % 2 ? R : L)[i >> 1] || (i % 2 ? R : L)[2]; return { x: p[0], y: p[1], s: 0.95 }; },
+    priority: (i) => ({ x: 74 + (i % 5) * 98, y: 1475 + Math.floor(i / 5) * 98, s: 0.94 }),
+    normal:   (i) => ({ x: 614 + (i % 5) * 98, y: 1475 + Math.floor(i / 5) * 98, s: 0.94 }),
+    gift:     (i) => {
+      const p = [[330, 1135], [750, 1135], [225, 1205], [855, 1205]][i] || [540, 1190];
+      return { x: p[0], y: p[1], s: 1.12 };
+    },
+    spot:     { x: 540, y: 1115, s: 1.42 },
+    done:     (i) => {
+      const p = (i % 2 ? R : L)[i >> 1] || (i % 2 ? R : L)[2];
+      return { x: p[0], y: p[1], s: 0.95 };
+    },
   };
 
-  // ---------- Tạo nhân vật: Avatar trên đầu + Hình dáng người (Body Silhouette) bên dưới ----------
+  // ---------- Nhân vật: Chỉ dùng Avatar tròn và khung viền sang trọng (đã bỏ hoàn toàn phần thân lỗi) ----------
   function makePerson(p) {
     const h = hue(p.key), el = document.createElement('div');
-    el.className = 'pp'; el.style.setProperty('--h', h);
+    el.className = 'pp';
+    el.style.setProperty('--h', h);
     const ini = (p.user || '?').trim().charAt(0).toUpperCase();
-    const safeKey = p.key.replace(/[^a-zA-Z0-9]/g, '_');
 
     el.innerHTML = `
       <div class="pp-ped"></div>
-      <div class="pp-body">
-        <svg class="pp-silhouette" viewBox="0 0 50 65">
-          <defs>
-            <linearGradient id="bodyGrad_${safeKey}" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="hsl(${h}, 85%, 68%)" stop-opacity="0.95"/>
-              <stop offset="60%" stop-color="hsl(${(h + 40) % 360}, 75%, 35%)" stop-opacity="0.85"/>
-              <stop offset="100%" stop-color="rgba(10, 5, 35, 0.95)"/>
-            </linearGradient>
-          </defs>
-          <path d="M17 10 C21 6 29 6 33 10 C39 15 45 25 43 45 L44 65 C44 65 42 65 40 65 L10 65 C8 65 6 65 6 65 L7 45 C5 25 11 15 17 10 Z" fill="url(#bodyGrad_${safeKey})" stroke="#ffd45e" stroke-width="1.2" stroke-opacity="0.6"/>
-          <path d="M25 10 L25 56" stroke="#ffd45e" stroke-width="1" stroke-opacity="0.4" stroke-dasharray="3,3"/>
-          <path d="M14 24 C20 30 30 30 36 24" stroke="#ffd45e" stroke-width="1.2" stroke-opacity="0.5" fill="none"/>
-        </svg>
-      </div>
+      <div class="pp-ring"></div>
       <div class="pp-av">
         <span>${ini}</span>
         ${p.avatar ? `<img src="${p.avatar.replace(/"/g, '')}" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
       </div>
       <div class="pp-pray">🙏</div>
+      <div class="pp-cards-wrap"></div>
       <div class="pp-name"></div>
       <div class="pp-tag" hidden></div>
     `;
@@ -62,26 +58,63 @@
     return el;
   }
 
-  const tf = (x, y, s) => `translate(${x - 50}px,${y - 35}px) scale(${s})`;
+  const tf = (x, y, s) => `translate(${x - 50}px,${y - 36}px) scale(${s})`;
+
+  // Hiệu ứng vái lạy 3 cái khi vừa bước vào sảnh chờ
+  function triggerBow3(el) {
+    if (!el) return;
+    el.classList.remove('bow3');
+    void el.offsetWidth; // Force reflow
+    el.classList.add('bow3');
+    clearTimeout(el.bowT);
+    el.bowT = setTimeout(() => el.classList.remove('bow3'), 2600);
+  }
+
+  function renderPersonCards(el, cardIds) {
+    const wrap = el.querySelector('.pp-cards-wrap');
+    if (!wrap) return;
+    if (!cardIds || !cardIds.length) {
+      wrap.innerHTML = '';
+      return;
+    }
+    const sig = cardIds.join(',');
+    if (wrap.dataset.sig === sig) return;
+    wrap.dataset.sig = sig;
+    wrap.innerHTML = cardIds.map((cid, idx) =>
+      `<img class="pp-card" style="--idx:${idx}" src="/cards/${cid}.jpg" alt="">`
+    ).join('');
+  }
 
   function place(key, w) {
     let o = people.get(key);
+    let isNewInLobby = false;
     if (!o) {
       const el = makePerson(w.p);
-      o = { el, x: null, y: null };
+      o = { el, x: null, y: null, inLobby: false };
       el.style.transition = 'none';
       el.style.transform = tf(w.x, 2020, w.s);
       el.getBoundingClientRect();
       el.style.transition = '';
       people.set(key, o);
+      if (w.cls.includes('lob')) isNewInLobby = true;
+    } else if (!o.inLobby && w.cls.includes('lob')) {
+      isNewInLobby = true;
     }
+    o.inLobby = w.cls.includes('lob');
+
     if (o.x !== w.x || o.y !== w.y) {
       o.el.classList.add('walking');
       clearTimeout(o.wt);
-      o.wt = setTimeout(() => o.el.classList.remove('walking'), 2600);
+      o.wt = setTimeout(() => {
+        o.el.classList.remove('walking');
+        if (isNewInLobby) triggerBow3(o.el);
+      }, 2200);
       o.el.style.transform = tf(w.x, w.y, w.s);
       o.x = w.x; o.y = w.y;
+    } else if (isNewInLobby) {
+      triggerBow3(o.el);
     }
+
     ['lob', 'pri', 'nor', 'gift', 'done', 'cur'].forEach((c) => o.el.classList.remove(c));
     w.cls.split(' ').forEach((c) => o.el.classList.add(c));
 
@@ -89,24 +122,30 @@
     tag.hidden = !w.tag;
     tag.textContent = w.tag || '';
 
-    let ci = o.el.querySelector('.pp-card');
-    if (w.card && !ci) {
-      ci = document.createElement('img');
-      ci.className = 'pp-card';
-      ci.src = `/cards/${w.card}.jpg`;
-      o.el.appendChild(ci);
-    }
-    if (!w.card && ci) ci.remove();
+    renderPersonCards(o.el, w.cards);
   }
 
   function sync(st) {
     S = st;
     const want = new Map();
-    st.lobby.priority.slice(0, 8).forEach((p, i) => want.set(p.key, { p, ...slot.priority(i), tag: '#' + (i + 1), cls: 'lob pri' }));
-    st.lobby.normal.slice(0, 8).forEach((p, i) => want.set(p.key, { p, ...slot.normal(i), tag: '#' + (i + 1), cls: 'lob nor' }));
-    st.giftQueue.slice(0, 4).forEach((p, i) => want.set(p.key, { p, ...slot.gift(i), tag: '🎁' + p.tier, cls: 'gift' }));
-    st.done.slice(0, 6).forEach((d, i) => want.set(d.key, { p: d, ...slot.done(i), cls: 'done', card: d.claimed ? d.cardIds[0] : null }));
-    if (st.current) want.set(st.current.key, { p: st.current, ...slot.spot, cls: 'cur' });
+    st.lobby.priority.slice(0, MAX_LOBBY_SHOW).forEach((p, i) =>
+      want.set(p.key, { p, ...slot.priority(i), tag: '#' + (i + 1), cls: 'lob pri' })
+    );
+    st.lobby.normal.slice(0, MAX_LOBBY_SHOW).forEach((p, i) =>
+      want.set(p.key, { p, ...slot.normal(i), tag: '#' + (i + 1), cls: 'lob nor' })
+    );
+    st.giftQueue.slice(0, 4).forEach((p, i) =>
+      want.set(p.key, { p, ...slot.gift(i), tag: p.coins + ' xu', cls: 'gift' })
+    );
+    st.done.slice(0, 6).forEach((d, i) =>
+      want.set(d.key, { p: d, ...slot.done(i), cls: 'done', cards: d.claimed ? d.cardIds : null })
+    );
+    if (st.current) {
+      want.set(st.current.key, {
+        p: st.current, ...slot.spot, cls: 'cur',
+        cards: st.current.claimed ? st.current.cardIds : null
+      });
+    }
 
     for (const [k, o] of people) {
       if (!want.has(k)) {
@@ -119,23 +158,16 @@
     for (const [k, w] of want) place(k, w);
 
     const lp = st.lobby.priority.length, ln = st.lobby.normal.length;
-    $('cntPri').textContent = lp > 8 ? `8/${lp}` : lp;
-    $('cntNor').textContent = ln > 8 ? `8/${ln}` : ln;
-    $('stView').textContent = st.tiktok.viewerCount || 0;
-    $('stRead').textContent = st.stats.readings;
-    $('stLike').textContent = Math.max(likes, st.stats.likes);
+    $('cntPri').textContent = lp > MAX_LOBBY_SHOW ? `${MAX_LOBBY_SHOW}/${lp}` : lp;
+    $('cntNor').textContent = ln > MAX_LOBBY_SHOW ? `${MAX_LOBBY_SHOW}/${ln}` : ln;
 
-    const live = st.tiktok.connected || st.settings.autoSim;
-    $('liveDot').classList.toggle('on', live);
-    $('liveText').textContent = st.tiktok.connected ? `@${st.tiktok.username} • LIVE` : st.settings.autoSim ? 'CỔNG VŨ TRỤ • DEMO' : 'CỔNG VŨ TRỤ • THẦN RA';
-
-    // Cập nhật trạng thái nút Demo
-    const isAuto = !!st.settings.autoSim;
-    if ($('demoLed')) $('demoLed').className = 'demo-led ' + (isAuto ? 'on' : 'off');
-    if ($('demoText')) $('demoText').textContent = isAuto ? 'DEMO: BẬT' : 'DEMO: TẮT';
-    if ($('dockBtnAuto')) $('dockBtnAuto').textContent = isAuto ? 'Demo tự động: BẬT' : 'Demo tự động: TẮT';
+    if ($('dockBtnAuto')) {
+      $('dockBtnAuto').textContent = st.settings.autoSim ? '🤖 Tự động demo: BẬT' : '🤖 Tự động demo: TẮT';
+    }
 
     RaAudio.setVolumes(st.settings.musicVolume, st.settings.ttsVolume, st.settings.ttsEnabled);
+    if (st.settings.ttsVoice) RaAudio.setVoice(st.settings.ttsVoice);
+    if (st.settings.bgmUrl) RaAudio.loadBgmUrl(st.settings.bgmUrl);
   }
 
   // ---------- Lá bài: Xào → Rút → Lật 3D ----------
@@ -258,9 +290,10 @@
     const n = ev.cards.length; shuffle(ev);
     ev.cards.forEach((_, i) => later(() => drawCard(ev, i), ev.walkMs + i * ev.dealMs));
     later(() => {
-      showCaption(ev.tierLabel || 'QUẺ BÀI THIÊN MỆNH', `THẦN RA ĐỌC BÀI CHO ${ev.user.toUpperCase()}`, ev.lines, ev.speakMs);
+      const qSub = ev.question ? ` • HỎI: "${ev.question}"` : '';
+      showCaption(ev.tierLabel || 'QUẺ BÀI THIÊN MỆNH', `THẦN RA ĐỌC BÀI CHO ${ev.user.toUpperCase()}${qSub}`, ev.lines, ev.speakMs);
       RaAudio.chime();
-      RaAudio.speak(ev.audioUrl, ev.speech, ev.speakMs);
+      RaAudio.speak(ev.audioUrl, ev.speech, ev.speakMs, ev.voice, ev.ttsAllowed !== false);
     }, ev.walkMs + n * ev.dealMs);
   }
 
@@ -270,7 +303,7 @@
     clearTimers(); hideCaption(); RaAudio.stopSpeech(); reading = null;
     const els = [...cardsEl.querySelectorAll('.card:not(.deck)')];
     cardsEl.querySelectorAll('.deck').forEach((d) => d.remove());
-    if (ev.claimed) setTimeout(() => flyTo(els, ev.key), 300);
+    if (ev.claimed) setTimeout(() => flyTo(els, ev.key, ev.cardIds), 250);
     else els.forEach((el) => {
       el.style.transition = 'opacity 1s,translate 1s';
       el.style.opacity = 0; el.style.translate = '0 -140px';
@@ -278,40 +311,54 @@
     });
   }
 
-  function flyTo(els, key) {
+  function flyTo(els, key, cardIds) {
     const o = people.get(key), tx = o ? o.x : 540, ty = o ? o.y : 900;
     els.forEach((el, i) => setTimeout(() => {
       const w = el.offsetWidth, h = el.offsetHeight;
-      el.style.transition = 'transform 1.1s cubic-bezier(.5,0,.8,.4),opacity 1.1s';
-      el.style.transform = place2(w, h, tx, ty, 340, 0.12);
-      el.style.opacity = 0.15;
+      el.style.transition = 'transform 1.05s cubic-bezier(.5,0,.8,.4),opacity 1.05s';
+      el.style.transform = place2(w, h, tx, ty, 340, 0.14);
+      el.style.opacity = 0.2;
       FX.burst(tx, ty, 'gold', 26, 6);
-      setTimeout(() => el.remove(), 1200);
-    }, i * 180));
+      setTimeout(() => {
+        el.remove();
+        const target = people.get(key);
+        if (target && cardIds) renderPersonCards(target.el, cardIds);
+      }, 1050);
+    }, i * 160));
     RaAudio.sparkle();
   }
 
+  // Claim: Lá bài vừa trải bay về và hiển thị ngay bên cạnh avatar người đó
   function claim(ev) {
-    const n = ev.cardIds.length, w = 150, h = Math.round(150 * CARD_AR);
-    const els = ev.cardIds.map((id, i) => {
-      const el = makeCard({ image: `/cards/${id}.jpg`, vn: '', keywords: '' }, w, h, 'shown');
-      el.style.transform = place2(w, h, 540 + (i - (n - 1) / 2) * 110, 900, 0, 0.1);
-      el.style.transition = 'transform .7s cubic-bezier(.2,.9,.3,1)';
-      el.getBoundingClientRect();
-      el.style.transform = place2(w, h, 540 + (i - (n - 1) / 2) * 110, 900, 0, 1);
-      return el;
-    });
-    FX.burst(540, 900, 'gold', 40, 7);
-    wave(540, 900); cast(0.6);
-    setTimeout(() => flyTo(els, ev.key), 900);
+    const o = people.get(ev.key);
+    if (o && ev.cardIds) {
+      renderPersonCards(o.el, ev.cardIds);
+      FX.burst(o.x, o.y, 'gold', 35, 7);
+    }
+    if (!ev.immediate) {
+      const n = ev.cardIds.length, w = 140, h = Math.round(140 * CARD_AR);
+      const els = ev.cardIds.map((id, i) => {
+        const el = makeCard({ image: `/cards/${id}.jpg`, vn: '', keywords: '' }, w, h, 'shown');
+        el.style.transform = place2(w, h, 540 + (i - (n - 1) / 2) * 105, 880, 0, 0.1);
+        el.style.transition = 'transform .65s cubic-bezier(.2,.9,.3,1)';
+        el.getBoundingClientRect();
+        el.style.transform = place2(w, h, 540 + (i - (n - 1) / 2) * 105, 880, 0, 1);
+        return el;
+      });
+      FX.burst(540, 880, 'gold', 40, 7);
+      wave(540, 880); cast(0.6);
+      setTimeout(() => flyTo(els, ev.key, ev.cardIds), 800);
+    } else {
+      RaAudio.sparkle();
+    }
   }
 
-  // ---------- Đèn hoa đăng / Thả tim / Quà tặng ----------
+  // ---------- Đèn hoa đăng / Vái lạy 3 cái / Thông báo quà tặng tự ẩn ----------
   function lantern(ev) {
     const o = people.get(ev.key);
-    if (o) { o.el.classList.add('bow'); setTimeout(() => o.el.classList.remove('bow'), 1800); }
+    if (o) triggerBow3(o.el);
     while (lanternsEl.children.length > 14) lanternsEl.firstChild.remove();
-    const x = o ? o.x - 28 : 200 + Math.random() * 600, y = o ? o.y - 70 : 1500;
+    const x = o ? o.x - 28 : 200 + Math.random() * 600, y = o ? o.y - 70 : 1460;
     const el = document.createElement('div'); el.className = 'lantern';
     el.style.cssText = `--x0:${x}px;--y0:${y}px;--dx:${Math.round(Math.random() * 200 - 100)}px;left:0;top:0`;
     el.innerHTML = '<div class="lamp"></div><small></small>';
@@ -321,19 +368,38 @@
   }
 
   function pray(ev) {
-    energy = Math.min(1, energy + Math.min(ev.count, 10) * 0.02); likes += ev.count;
+    energy = Math.min(1, energy + Math.min(ev.count || 1, 10) * 0.02); likes += (ev.count || 1);
     const o = people.get(ev.key); if (!o) return;
     o.el.classList.add('pray'); clearTimeout(o.pt);
-    o.pt = setTimeout(() => o.el.classList.remove('pray'), 2400);
-    FX.burst(o.x, o.y, 'pink', 6, 3);
+    o.pt = setTimeout(() => o.el.classList.remove('pray'), 2500);
+    FX.burst(o.x, o.y, 'pink', 8, 3.5);
   }
 
+  function bow3(ev) {
+    const o = people.get(ev.key);
+    if (!o) return;
+    triggerBow3(o.el);
+    FX.burst(o.x, o.y, 'gold', 16, 4.5);
+  }
+
+  // Sửa triệt để lỗi thông báo tặng quà không tự ẩn sau vài giây
   function giftBanner(ev) {
-    const b = $('banner'), n = ev.tier;
-    b.className = 'banner t' + n;
-    b.innerHTML = `🎁 ${ev.user.replace(/</g, '')}<small>${ev.giftName.replace(/</g, '')} • ${ev.coins} xu → ${n} lá bài</small>`;
-    requestAnimationFrame(() => b.classList.add('show'));
-    setTimeout(() => b.classList.remove('show'), 3400);
+    const b = $('banner'), n = ev.tier || 1;
+    if (bannerTimer) {
+      clearTimeout(bannerTimer);
+      bannerTimer = null;
+    }
+    b.classList.remove('show');
+    void b.offsetWidth; // Force reflow để animation luôn chạy mượt
+    b.className = 'banner t' + n + ' show';
+    const qHtml = ev.question ? `<em class="banner-q">Hỏi: “${ev.question.replace(/</g, '')}”</em>` : '';
+    b.innerHTML = `🎁 ${ev.user.replace(/</g, '')}<small>Tặng ${ev.coins} xu → Trải ${n} lá bài VIP</small>${qHtml}`;
+
+    bannerTimer = setTimeout(() => {
+      b.classList.remove('show');
+      bannerTimer = null;
+    }, 3600);
+
     const [ox, oy] = orb();
     FX.burst(ox, oy, 'gold', 40 + n * 25, 9);
     if (n >= 3) FX.rain('gold', 90);
@@ -350,12 +416,25 @@
 
   // ---------- WebSocket JSON-RPC ----------
   const H = {
-    'tarot.state': sync, 'reading.start': startReading, 'reading.end': endReading, 'card.claim': claim,
-    'lantern.release': lantern, 'person.pray': pray, 'gift.in': giftBanner, 'event.log': (e) => ticker(`${e.icon} ${e.text}`),
+    'tarot.state': sync,
+    'reading.start': startReading,
+    'reading.end': endReading,
+    'card.claim': claim,
+    'lantern.release': lantern,
+    'person.pray': pray,
+    'person.bow3': bow3,
+    'gift.in': giftBanner,
+    'bgm.changed': (p) => { if (p && p.url) RaAudio.loadBgmUrl(p.url); },
+    'settings.updated': (s) => {
+      RaAudio.setVolumes(s.musicVolume, s.ttsVolume, s.ttsEnabled);
+      if (s.ttsVoice) RaAudio.setVoice(s.ttsVoice);
+      if (s.bgmUrl) RaAudio.loadBgmUrl(s.bgmUrl);
+    },
+    'event.log': (e) => ticker(`${e.icon} ${e.text}`),
     'prayer.speak': (e) => {
-      showCaption('LỜI CẦU NGUYỆN', 'RA LẮNG NGHE LỜI NGUYỆN', [e.wish], e.durationMs);
+      showCaption('LỜI CẦU NGUYỆN', 'THẦN RA LẮNG NGHE LỜI NGUYỆN', [e.wish], e.durationMs);
       setTimeout(hideCaption, e.durationMs + 400);
-      RaAudio.speak(e.audioUrl, e.text, e.durationMs);
+      RaAudio.speak(e.audioUrl, e.text, e.durationMs, e.voice, e.ttsAllowed !== false);
     },
   };
 
@@ -371,14 +450,14 @@
   connect();
   setInterval(() => { energy *= 0.965; stage.style.setProperty('--e', energy.toFixed(2)); }, 250);
 
-  // ---------- Âm thanh, Điều khiển MP3 & Nút Demo ----------
+  // ---------- Mở khóa âm thanh & Dock thử nghiệm (Hiển thị đúng mức xu) ----------
   const unlock = () => RaAudio.unlock();
   addEventListener('pointerdown', unlock, { once: true });
   if (params.get('obs')) unlock();
 
   if (!params.get('obs') && !params.get('quiet')) {
     const b = document.createElement('button');
-    b.className = 'sound'; b.textContent = '🔊 Bấm để mở âm thanh & hiệu ứng';
+    b.className = 'sound'; b.textContent = '🔊 Bấm để kích hoạt âm thanh & nhạc nền';
     b.onclick = () => { unlock(); b.remove(); };
     document.body.appendChild(b);
   }
@@ -389,48 +468,31 @@
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: p })
   });
 
-  // Xử lý nút bật/tắt demo trên giao diện chính
-  $('btnToggleDemo')?.addEventListener('click', () => {
-    const curAuto = S && S.settings ? S.settings.autoSim : false;
-    rpc('live.setAutoSim', { enabled: !curAuto });
-  });
-
-  // Xử lý tải và phát MP3 tùy chọn
-  $('mp3UploadInput')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const name = RaAudio.loadCustomMP3(file);
-      $('mp3TrackName').textContent = name.length > 14 ? name.slice(0, 12) + '…' : name;
-      $('btnPlayPauseMusic').textContent = '⏸';
-    }
-  });
-
-  $('btnPlayPauseMusic')?.addEventListener('click', () => {
-    const isPlaying = RaAudio.toggleMusic();
-    $('btnPlayPauseMusic').textContent = isPlaying ? '⏸' : '▶';
-  });
-
-  // Xử lý bộ chọn giọng đọc
-  $('voicePicker')?.addEventListener('change', (e) => {
-    const v = e.target.value;
-    RaAudio.setVoice(v);
-    rpc('tarot.updateSettings', { ttsVoice: v });
-  });
-
-  // Dock tương tác
   const NAMES = ['Ngọc Anh', 'Minh Quân', 'Diệu Thảo', 'Hoàng Nam', 'Thanh Hà', 'Đức Thịnh', 'Bảo Châu', 'Gia Hân', 'Tuấn Kiệt', 'Mai Phương', 'Khánh Linh', 'Quốc Bảo'];
+  const QUESTIONS = [
+    'Chuyện tình cảm của em tháng tới thế nào ạ?',
+    'Công việc và tài chính sắp tới có khởi sắc không thần Ra?',
+    'Người cũ có còn nghĩ đến em không ạ?',
+    'Sắp tới em chuyển việc có thuận lợi không?'
+  ];
   let demoN = 0, lastU = null;
   const newU = () => (lastU = { user: NAMES[demoN % NAMES.length], uniqueId: 'demo' + demoN++ });
   const U = () => lastU || newU();
+
   const ACT = {
-    like: () => rpc('tarot.like', { ...newU(), count: 8 }),
+    like: () => rpc('tarot.like', { ...newU(), count: 5 }),
     follow: () => rpc('tarot.follow', U()),
-    g1: () => rpc('tarot.gift', { ...newU(), coins: 1, giftName: 'Hoa hồng' }),
-    g2: () => rpc('tarot.gift', { ...newU(), coins: 20, giftName: 'Nước hoa' }),
-    g3: () => rpc('tarot.gift', { ...newU(), coins: 199, giftName: 'Vương miện' }),
-    pray: () => rpc('tarot.pray', { ...U(), wish: 'Cầu cho gia đình bình an và may mắn' }),
+    g1: () => rpc('tarot.gift', { ...newU(), coins: 5, giftName: 'Gói 1–10 xu', question: QUESTIONS[demoN % QUESTIONS.length] }),
+    g2: () => rpc('tarot.gift', { ...newU(), coins: 30, giftName: 'Gói 11–99 xu', question: QUESTIONS[demoN % QUESTIONS.length] }),
+    g3: () => rpc('tarot.gift', { ...newU(), coins: 150, giftName: 'Gói ≥ 100 xu', question: QUESTIONS[demoN % QUESTIONS.length] }),
+    pray: () => rpc('tarot.pray', { ...U(), wish: 'Cầu cho gia đình luôn bình an và may mắn' }),
     claim: () => rpc('tarot.claim', U()),
     auto: () => rpc('live.setAutoSim', { enabled: !(S && S.settings.autoSim) })
   };
-  $('dock').addEventListener('click', (e) => { const a = e.target.dataset.a; if (a && ACT[a]) ACT[a](); });
+  $('dock').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const a = btn.dataset.a;
+    if (a && ACT[a]) ACT[a]();
+  });
 })();
