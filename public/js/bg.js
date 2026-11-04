@@ -1,4 +1,4 @@
-// Nền tinh vân vũ trụ chuyển động chậm (fbm shader WebGL đa lớp)
+// Nền Cổng Thiên Hà (Galaxy Portal) sang trọng, huyền bí và ma mị (WebGL Shader)
 (() => {
   const cv = document.getElementById('bg');
   if (!cv) return;
@@ -10,7 +10,7 @@
 uniform float t;
 uniform vec2 res;
 
-float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}
 float n(vec2 p){
   vec2 i=floor(p),f=fract(p);
   f=f*f*(3.-2.*f);
@@ -18,27 +18,51 @@ float n(vec2 p){
 }
 float fbm(vec2 p){
   float v=0.,a=.5;
-  for(int i=0;i<5;i++){v+=a*n(p);p*=2.02;a*=.5;}
+  mat2 rot=mat2(.8,.6,-.6,.8);
+  for(int i=0;i<5;i++){v+=a*n(p);p=rot*p*2.03;a*=.5;}
   return v;
 }
 
 void main(){
   vec2 uv=gl_FragCoord.xy/res;
   uv.y=1.-uv.y;
-  vec2 p=uv*vec2(2.4,4.2);
-  float a=fbm(p+vec2(t*.018,0.));
-  float b=fbm(p*1.3+vec2(5.2,t*.013)+a);
-  float c=fbm(p*.8-b+vec2(0.,t*.01));
   
-  // Màu sắc vũ trụ: tím huyền bí, hồng tinh vân, xanh thiên hà
-  vec3 col=vec3(.012,.008,.06);
-  col=mix(col,vec3(.18,.08,.62),smoothstep(.32,.82,a)*.95);
-  col=mix(col,vec3(.65,.09,.68),smoothstep(.48,.89,b)*.65);
-  col+=vec3(.05,.26,.65)*smoothstep(.48,.94,c)*.75;
+  // Tâm cổng thiên hà đặt tại khu vực giữa thần Ra và đài trải bài
+  vec2 center=vec2(.5,.43);
+  vec2 dVec=(uv-center)*vec2(1.,1.68);
+  float r=length(dVec);
+  float ang=atan(dVec.y,dVec.x);
   
-  // Hào quang vàng hoàng kim bao quanh Thần Ra ở đỉnh
-  col+=vec3(1.0,.68,.25)*exp(-pow(length((uv-vec2(.5,.14))*vec2(1.,.55))*3.0,2.))*.42;
-  col*=.55+.6*smoothstep(1.3,.1,length((uv-.5)*vec2(.9,.7)));
+  // Xoáy cổng thiên hà (Spiral Galaxy Vortex)
+  float swirl=ang - r*4.5 + t*.18;
+  vec2 spUv=vec2(cos(swirl),sin(swirl))*r*2.8 + vec2(t*.02, -t*.015);
+  
+  float f1=fbm(spUv*1.4);
+  float f2=fbm(spUv*2.6 + vec2(f1*1.2, t*.04));
+  float arms=pow(max(0., sin(ang*2.0 - r*7.0 + f1*3.5 + t*.25)), 2.2);
+  
+  // Bảng màu vũ trụ sang trọng: Đen huyền bí, Tím Hoàng Gia, Xanh Lam Tinh Vân & Vàng Kim Cổng Trời
+  vec3 col=vec3(.015,.006,.05);
+  col=mix(col, vec3(.14,.04,.38), smoothstep(.18,.78,f1));
+  col=mix(col, vec3(.38,.06,.56), smoothstep(.35,.88,f2)*.82);
+  col+=vec3(.06,.32,.68)*arms*exp(-r*1.8)*.75;
+  
+  // Vòng cổng thiên hà phát sáng ma mị (Sacred Galaxy Gate Rings)
+  float gateRing1=exp(-pow((r-.36)*18., 2.));
+  float gateRing2=exp(-pow((r-.22)*24., 2.));
+  col+=vec3(1.,.78,.32)*gateRing1*(.45+.35*sin(ang*6.+t*1.2));
+  col+=vec3(.55,.35,1.)*gateRing2*.5;
+  
+  // Hào quang thần thánh phía sau Thần Ra
+  float raGlow=exp(-pow(length((uv-vec2(.5,.17))*vec2(1.,.65))*2.9, 2.));
+  col+=vec3(1.,.68,.22)*raGlow*.48;
+  
+  // Hào quang tâm cổng thiên hà
+  float core=exp(-r*r*11.);
+  col+=vec3(.95,.82,1.)*core*.38;
+  
+  // Viền tối sâu tạo chiều sâu sang trọng (Vignette)
+  col*=.52+.55*smoothstep(1.38,.15,length((uv-.5)*vec2(.95,.75)));
   
   gl_FragColor=vec4(col,1.);
 }`;
@@ -69,7 +93,7 @@ void main(){
   let last = 0;
   (function frame(ts) {
     requestAnimationFrame(frame);
-    if (document.hidden || ts - last < 50) return;
+    if (document.hidden || ts - last < 45) return;
     last = ts;
     gl.uniform1f(uT, ts / 1000);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
