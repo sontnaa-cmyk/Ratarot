@@ -1,15 +1,29 @@
-// Âm thanh: Nhạc nền MP3 + Ambient Synth Web Audio, Bộ đọc tiếng Việt đa dạng
+// Quản lý Âm thanh: Nhạc nền MP3 lặp vô hạn (tự động thu nhỏ khi đọc bài, tăng lại khi rảnh),
+// Hiệu ứng âm thanh phép thuật, và Hệ thống 6 phong cách giọng đọc tiếng Việt đa dạng.
 (() => {
   let ctx = null, master = null, pad = null, ducked = false;
-  let musicVol = 0.35, ttsVol = 0.95, ttsOn = true;
-  let bgAudioEl = null;
-  let currentVoice = 'vi-VN-nu';
+  let musicVol = 0.40, ttsVol = 0.95, ttsOn = true;
+  let bgAudioEl = null, currentBgmUrl = '';
+  let currentVoice = 'nu-huyen-bi';
   const speakQ = [];
   let speaking = false;
+
+  // Cấu hình 6 phong cách giọng đọc khác nhau để không bị nhàm chán
+  const VOICE_PROFILES = {
+    'nu-huyen-bi': { pitch: 1.06, rate: 0.94, preferFemale: true },
+    'nam-tram-am': { pitch: 0.76, rate: 0.91, preferFemale: false },
+    'tien-tri':    { pitch: 0.86, rate: 0.84, preferFemale: true },
+    'nu-diu-dang': { pitch: 1.18, rate: 0.97, preferFemale: true },
+    'nam-co-dai':  { pitch: 0.70, rate: 1.01, preferFemale: false },
+    'maichi':      { pitch: 1.0,  rate: 0.95, preferFemale: true }
+  };
 
   function init() {
     if (ctx) {
       if (ctx.state === 'suspended') ctx.resume();
+      if (bgAudioEl && bgAudioEl.src && bgAudioEl.paused) {
+        bgAudioEl.play().catch(() => {});
+      }
       return;
     }
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -18,12 +32,12 @@
     master.gain.value = musicVol;
     master.connect(ctx.destination);
 
-    // Hợp âm nền vũ trụ mặc định
+    // Dàn hợp âm nền vũ trụ mặc định (chỉ kêu khi chưa chọn file MP3)
     pad = ctx.createGain();
-    pad.gain.value = 0.5;
+    pad.gain.value = currentBgmUrl ? 0.0 : 0.45;
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = 900;
+    lp.frequency.value = 850;
     pad.connect(lp);
     lp.connect(master);
 
@@ -33,11 +47,11 @@
       o.frequency.value = f;
       o.detune.value = (i - 2) * 4;
       const g = ctx.createGain();
-      g.gain.value = 0.12;
+      g.gain.value = 0.11;
       const l = ctx.createOscillator();
       l.frequency.value = 0.05 + i * 0.021;
       const lg = ctx.createGain();
-      lg.gain.value = 0.07;
+      lg.gain.value = 0.06;
       l.connect(lg);
       lg.connect(g.gain);
       l.start();
@@ -46,11 +60,59 @@
       o.start();
     });
 
+    ensureBgAudioElement();
+    if (currentBgmUrl) {
+      bgAudioEl.src = currentBgmUrl;
+      bgAudioEl.play().catch(() => {});
+    }
+  }
+
+  function ensureBgAudioElement() {
     if (!bgAudioEl) {
       bgAudioEl = new Audio();
-      bgAudioEl.loop = true;
-      bgAudioEl.volume = musicVol;
+      bgAudioEl.loop = true; // Chạy lặp vô hạn
+      bgAudioEl.preload = 'auto';
+      bgAudioEl.volume = ducked ? musicVol * 0.22 : musicVol;
+      // Đảm bảo lặp vô hạn kể cả trên các trình duyệt khắt khe
+      bgAudioEl.addEventListener('ended', () => {
+        bgAudioEl.currentTime = 0;
+        bgAudioEl.play().catch(() => {});
+      });
     }
+    return bgAudioEl;
+  }
+
+  function loadBgmUrl(url) {
+    if (!url || url === currentBgmUrl) return;
+    currentBgmUrl = url;
+    const el = ensureBgAudioElement();
+    el.src = url;
+    el.loop = true;
+    el.volume = ducked ? musicVol * 0.22 : musicVol;
+    if (ctx && pad) {
+      // Tắt tiếng synth mặc định khi đã có file MP3 nhạc nền
+      pad.gain.setTargetAtTime(0.0, ctx.currentTime, 0.3);
+    }
+    el.play().catch(() => {});
+  }
+
+  function rampAudioVolume(targetVol, durationMs = 400) {
+    if (!bgAudioEl) return;
+    const startVol = bgAudioEl.volume;
+    const diff = targetVol - startVol;
+    if (Math.abs(diff) < 0.01) {
+      bgAudioEl.volume = Math.max(0, Math.min(1, targetVol));
+      return;
+    }
+    const steps = 12;
+    const stepTime = durationMs / steps;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const nextV = startVol + (diff * (step / steps));
+      bgAudioEl.volume = Math.max(0, Math.min(1, nextV));
+      if (step >= steps) clearInterval(timer);
+    }, stepTime);
   }
 
   function tone(f, t0, dur, type = 'sine', vol = 0.2, dest) {
@@ -67,51 +129,21 @@
     o.stop(t0 + dur + 0.05);
   }
 
-  function loadCustomMP3(file) {
-    init();
-    const url = URL.createObjectURL(file);
-    if (!bgAudioEl) {
-      bgAudioEl = new Audio();
-      bgAudioEl.loop = true;
-    }
-    bgAudioEl.src = url;
-    bgAudioEl.volume = musicVol;
-    bgAudioEl.play().catch(() => {});
-    if (pad) pad.gain.setTargetAtTime(0.05, ctx.currentTime, 0.5);
-    return file.name;
-  }
-
-  function toggleMusic() {
-    if (!bgAudioEl || !bgAudioEl.src) {
-      if (pad) {
-        const cur = pad.gain.value;
-        pad.gain.setTargetAtTime(cur > 0.1 ? 0 : 0.5, ctx.currentTime, 0.2);
-        return cur <= 0.1;
-      }
-      return false;
-    }
-    if (bgAudioEl.paused) {
-      bgAudioEl.play();
-      return true;
-    } else {
-      bgAudioEl.pause();
-      return false;
-    }
-  }
-
   const A = {
     unlock: init,
-    loadCustomMP3,
-    toggleMusic,
-    setVoice(v) { currentVoice = v; },
+    loadBgmUrl,
+    setVoice(v) {
+      if (v) currentVoice = v;
+    },
     setVolumes(m, t, on) {
       if (m != null) {
-        musicVol = m;
-        if (master) master.gain.value = ducked ? m * 0.25 : m;
-        if (bgAudioEl) bgAudioEl.volume = ducked ? m * 0.25 : m;
+        musicVol = Number(m);
+        const target = ducked ? musicVol * 0.22 : musicVol;
+        if (master && ctx) master.gain.setTargetAtTime(target, ctx.currentTime, 0.2);
+        if (bgAudioEl) rampAudioVolume(target, 250);
       }
-      if (t != null) ttsVol = t;
-      if (on != null) ttsOn = on;
+      if (t != null) ttsVol = Number(t);
+      if (on != null) ttsOn = !!on;
     },
     sparkle() {
       if (!ctx) return;
@@ -174,35 +206,44 @@
       tone(1760, t + 0.1, 0.6, 'sine', 0.08);
       tone(2349, t + 0.22, 0.9, 'sine', 0.06);
     },
+    // Tự động thu nhỏ âm lượng khi đọc bài, và tăng trở lại bình thường khi rảnh
     duck(on) {
-      ducked = on;
-      const target = on ? musicVol * 0.25 : musicVol;
-      if (master) master.gain.setTargetAtTime(target, ctx.currentTime, 0.3);
-      if (bgAudioEl) bgAudioEl.volume = target;
+      ducked = !!on;
+      const target = ducked ? musicVol * 0.22 : musicVol;
+      if (master && ctx) master.gain.setTargetAtTime(target, ctx.currentTime, 0.35);
+      if (bgAudioEl) rampAudioVolume(target, 450);
     },
-    speak(url, text, ms) {
-      speakQ.push({ url, text, ms, voice: currentVoice });
+    speak(url, text, ms, voiceOverride, ttsAllowed = true) {
+      if (!ttsAllowed) return;
+      speakQ.push({ url, text, ms, voice: voiceOverride || currentVoice });
       next();
     },
     stopSpeech() {
       speakQ.length = 0;
+      speaking = false;
+      A.duck(false);
       if (window.speechSynthesis) window.speechSynthesis.cancel();
     },
   };
 
   function next() {
     if (speaking || !speakQ.length || !ttsOn) {
-      if (!ttsOn) speakQ.length = 0;
+      if (!ttsOn) {
+        speakQ.length = 0;
+        A.duck(false);
+      }
       return;
     }
     speaking = true;
-    A.duck(true);
+    A.duck(true); // Thu nhỏ nhạc nền khi bắt đầu đọc bài
     const it = speakQ.shift();
     const done = () => {
       speaking = false;
-      A.duck(false);
+      if (speakQ.length === 0) A.duck(false); // Khi rảnh thì tăng âm lượng nhạc nền trở lại bình thường
       next();
     };
+
+    const profile = VOICE_PROFILES[it.voice] || VOICE_PROFILES['nu-huyen-bi'];
 
     const fallbackSpeech = () => {
       try {
@@ -211,12 +252,19 @@
         const u = new SpeechSynthesisUtterance(it.text);
         u.lang = 'vi-VN';
         u.volume = ttsVol;
-        u.rate = 0.95;
-        u.pitch = it.voice === 'vi-VN-nam' ? 0.82 : 1.05;
+        u.rate = profile.rate;
+        u.pitch = profile.pitch;
 
-        const voices = window.speechSynthesis.getVoices();
-        const viVoice = voices.find(v => v.lang.includes('vi') || v.lang.includes('VIE'));
-        if (viVoice) u.voice = viVoice;
+        const voices = window.speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().includes('vi'));
+        if (voices.length > 0) {
+          if (profile.preferFemale) {
+            const fem = voices.find(v => /hoai|my|linh|nu|female|lan|mai/i.test(v.name));
+            u.voice = fem || voices[0];
+          } else {
+            const mal = voices.find(v => /nam|minh|male|quang|huy/i.test(v.name));
+            u.voice = mal || voices[voices.length - 1];
+          }
+        }
 
         u.onend = done;
         u.onerror = done;
@@ -226,7 +274,7 @@
       }
     };
 
-    if (it.url) {
+    if (it.url && it.voice === 'maichi') {
       const a = new Audio(it.url);
       a.volume = ttsVol;
       a.onended = done;
